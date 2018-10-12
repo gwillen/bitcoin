@@ -9,6 +9,7 @@
 #include <key.h>
 #include <serialize.h>
 #include <script/standard.h>
+#include <script/sign.h>  // XXX for PartiallySignedTransaction
 
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>
@@ -184,6 +185,8 @@ public:
     // Passphrase only needed when unlocking
     bool setWalletLocked(bool locked, const SecureString &passPhrase=SecureString());
     bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
+
+    bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs);
 
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext

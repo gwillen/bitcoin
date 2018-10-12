@@ -55,6 +55,7 @@ public:
         DatabaseCache,          // int
         SpendZeroConfChange,    // bool
         Listen,                 // bool
+        OfflineTransactionFeatures, // bool
         OptionIDRowCount,
     };
 
@@ -75,6 +76,7 @@ public:
     QString getThirdPartyTxUrls() const { return strThirdPartyTxUrls; }
     bool getProxySettings(QNetworkProxy& proxy) const;
     bool getCoinControlFeatures() const { return fCoinControlFeatures; }
+    bool getOfflineTransactionFeatures() const { return fOfflineTransactionFeatures; }
     const QString& getOverriddenByCommandLine() { return strOverriddenByCommandLine; }
 
     /* Restart flag helper */
@@ -93,6 +95,7 @@ private:
     int nDisplayUnit;
     QString strThirdPartyTxUrls;
     bool fCoinControlFeatures;
+    bool fOfflineTransactionFeatures;
     /* settings that were overridden by command-line */
     QString strOverriddenByCommandLine;
 
@@ -104,6 +107,7 @@ private:
 Q_SIGNALS:
     void displayUnitChanged(int unit);
     void coinControlFeaturesChanged(bool);
+    void offlineTransactionFeaturesChanged(bool);
     void hideTrayIconChanged(bool);
 };
 

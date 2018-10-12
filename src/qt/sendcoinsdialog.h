@@ -45,6 +45,9 @@ public:
     void pasteEntry(const SendCoinsRecipient &rv);
     bool handlePaymentRequest(const SendCoinsRecipient &recipient);
 
+    // Automatically toggles "create unsigned transaction" appropriately
+    void setIncludeWatchonly(bool allow);
+
 public Q_SLOTS:
     void clear();
     void reject();
@@ -63,6 +66,7 @@ private:
     bool fNewRecipientAllowed;
     bool fFeeMinimized;
     const PlatformStyle *platformStyle;
+    Qt::CheckState fCreateUnsignedTransactionCheckedPrev;
 
     // Process WalletModel::SendCoinsReturn and generate a pair consisting
     // of a message and message flags for use in Q_EMIT message().
@@ -92,6 +96,9 @@ private Q_SLOTS:
     void coinControlClipboardBytes();
     void coinControlClipboardLowOutput();
     void coinControlClipboardChange();
+    void offlineTransactionFeatureChanged(bool);
+    void createUnsignedTransactionChecked(int);
+    void includeWatchonlyCoinsChecked(int);
     void updateFeeSectionControls();
     void updateSmartFeeLabel();
 
