@@ -28,7 +28,7 @@
 #include <validation.h>
 #include <wallet/feebumper.h>
 #include <wallet/fees.h>
-#include <wallet/rpcwallet.h>
+#include <wallet/rpcwallet.h> // XXX noooooo gross don't (but upstream did :-( )
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
 
@@ -149,6 +149,9 @@ public:
         const SecureString& new_wallet_passphrase) override
     {
         return m_wallet->ChangeWalletPassphrase(old_wallet_passphrase, new_wallet_passphrase);
+    }
+    bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs) override {
+        return ::FillPSBT(&m_wallet, psbtx, sighash_type, sign, bip32derivs);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }

@@ -96,12 +96,14 @@ QT_TS = \
 
 QT_FORMS_UI = \
   qt/forms/addressbookpage.ui \
+  qt/forms/asdftestdialog.ui \
   qt/forms/askpassphrasedialog.ui \
   qt/forms/coincontroldialog.ui \
   qt/forms/editaddressdialog.ui \
   qt/forms/helpmessagedialog.ui \
   qt/forms/intro.ui \
   qt/forms/modaloverlay.ui \
+  qt/forms/offlinetransactionsdialog.ui \
   qt/forms/openuridialog.ui \
   qt/forms/optionsdialog.ui \
   qt/forms/overviewpage.ui \
@@ -116,6 +118,7 @@ QT_FORMS_UI = \
 QT_MOC_CPP = \
   qt/moc_addressbookpage.cpp \
   qt/moc_addresstablemodel.cpp \
+  qt/moc_asdftestdialog.cpp \
   qt/moc_askpassphrasedialog.cpp \
   qt/moc_bantablemodel.cpp \
   qt/moc_bitcoinaddressvalidator.cpp \
@@ -134,6 +137,7 @@ QT_MOC_CPP = \
   qt/moc_macnotificationhandler.cpp \
   qt/moc_modaloverlay.cpp \
   qt/moc_notificator.cpp \
+  qt/moc_offlinetransactionsdialog.cpp \
   qt/moc_openuridialog.cpp \
   qt/moc_optionsdialog.cpp \
   qt/moc_optionsmodel.cpp \
@@ -191,6 +195,7 @@ endif
 BITCOIN_QT_H = \
   qt/addressbookpage.h \
   qt/addresstablemodel.h \
+  qt/asdftestdialog.h \
   qt/askpassphrasedialog.h \
   qt/bantablemodel.h \
   qt/bitcoinaddressvalidator.h \
@@ -212,6 +217,7 @@ BITCOIN_QT_H = \
   qt/modaloverlay.h \
   qt/networkstyle.h \
   qt/notificator.h \
+  qt/offlinetransactionsdialog.h \
   qt/openuridialog.h \
   qt/optionsdialog.h \
   qt/optionsmodel.h \
@@ -333,10 +339,12 @@ BITCOIN_QT_WINDOWS_CPP = qt/winshutdownmonitor.cpp
 BITCOIN_QT_WALLET_CPP = \
   qt/addressbookpage.cpp \
   qt/addresstablemodel.cpp \
+  qt/asdftestdialog.cpp \
   qt/askpassphrasedialog.cpp \
   qt/coincontroldialog.cpp \
   qt/coincontroltreewidget.cpp \
   qt/editaddressdialog.cpp \
+  qt/offlinetransactionsdialog.cpp \
   qt/openuridialog.cpp \
   qt/overviewpage.cpp \
   qt/paymentserver.cpp \

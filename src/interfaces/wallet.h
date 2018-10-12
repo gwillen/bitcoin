@@ -8,6 +8,7 @@
 #include <amount.h>                    // For CAmount
 #include <pubkey.h>                    // For CKeyID and CScriptID (definitions needed in CTxDestination instantiation)
 #include <script/ismine.h>             // For isminefilter, isminetype
+#include <script/sign.h>               // For PartiallySignedTransaction
 #include <script/standard.h>           // For CTxDestination
 #include <support/allocators/secure.h> // For SecureString
 #include <ui_interface.h>              // For ChangeType
@@ -66,6 +67,9 @@ public:
     //! Change wallet passphrase.
     virtual bool changeWalletPassphrase(const SecureString& old_wallet_passphrase,
         const SecureString& new_wallet_passphrase) = 0;
+
+    //! Fill in partially signed transaction using wallet info.
+    virtual bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs) = 0;
 
     //! Abort a rescan.
     virtual void abortRescan() = 0;

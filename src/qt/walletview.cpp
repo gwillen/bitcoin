@@ -9,6 +9,7 @@
 #include <qt/bitcoingui.h>
 #include <qt/clientmodel.h>
 #include <qt/guiutil.h>
+#include <qt/offlinetransactionsdialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/overviewpage.h>
 #include <qt/platformstyle.h>
@@ -330,3 +331,40 @@ void WalletView::requestedSyncWarningInfo()
 {
     Q_EMIT outOfSyncWarningClicked();
 }
+
+void WalletView::gotoOfflineCreate()
+{
+    // Caller will activate the send coins page for us. XXX jank level: medium
+
+    // This will automatically take care of the 'create unsigned' checkbox.
+    sendCoinsPage->setIncludeWatchonly(true);
+}
+
+void WalletView::gotoOfflineSign()
+{
+    OfflineTransactionsDialog *dlg = new OfflineTransactionsDialog(this, walletModel, clientModel);
+    dlg->setWorkflowState(OfflineTransactionsDialog::SignTransaction);
+    dlg->exec();
+}
+
+void WalletView::gotoOfflineBroadcast()
+{
+    OfflineTransactionsDialog *dlg = new OfflineTransactionsDialog(this, walletModel, clientModel);
+    dlg->setWorkflowState(OfflineTransactionsDialog::BroadcastTransaction);
+    dlg->exec();
+}
+
+/* XXX
+void WalletView::gotoVerifyMessageTab(QString addr)
+{
+    // calls show() in showTab_VM()
+    SignVerifyMessageDialog *signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
+    signVerifyMessageDialog->setAttribute(Qt::WA_DeleteOnClose);
+    signVerifyMessageDialog->setModel(walletModel);
+    signVerifyMessageDialog->showTab_VM(true);
+
+    if (!addr.isEmpty())
+        signVerifyMessageDialog->setAddress_VM(addr);
+}
+
+*/

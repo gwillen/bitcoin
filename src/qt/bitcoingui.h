@@ -135,6 +135,9 @@ private:
     QAction* usedReceivingAddressesAction = nullptr;
     QAction* signMessageAction = nullptr;
     QAction* verifyMessageAction = nullptr;
+    QAction* offlineCreateAction = nullptr;
+    QAction* offlineSignAction = nullptr;
+    QAction* offlineBroadcastAction = nullptr;
     QAction* aboutAction = nullptr;
     QAction* receiveCoinsAction = nullptr;
     QAction* receiveCoinsMenuAction = nullptr;
@@ -151,6 +154,8 @@ private:
     QAction* m_close_wallet_action{nullptr};
     QAction* m_wallet_selector_label_action = nullptr;
     QAction* m_wallet_selector_action = nullptr;
+
+    QMenu* offlineMenu = nullptr;
 
     QLabel *m_wallet_selector_label = nullptr;
     QComboBox* m_wallet_selector = nullptr;
@@ -227,6 +232,9 @@ public Q_SLOTS:
     /** Set the UI status indicators based on the currently selected wallet.
     */
     void updateWalletStatus();
+
+    /* Show or hide the offline transactions menu */
+    void setOfflineMenuVisible(bool visible);
 
 private:
     /** Set the encryption status as shown in the UI.

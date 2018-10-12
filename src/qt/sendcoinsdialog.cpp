@@ -10,6 +10,7 @@
 #include <qt/forms/ui_sendcoinsdialog.h>
 
 #include <qt/addresstablemodel.h>
+#include <qt/asdftestdialog.h>
 #include <qt/bitcoinunits.h>
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
@@ -17,11 +18,13 @@
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/sendcoinsentry.h>
+#include <qt/offlinetransactionsdialog.h>
 
 #include <chainparams.h>
 #include <interfaces/node.h>
 #include <key_io.h>
 #include <wallet/coincontrol.h>
+#include <wallet/rpcwallet.h> // XXX gross
 #include <ui_interface.h>
 #include <txmempool.h>
 #include <policy/fees.h>
@@ -58,7 +61,8 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     model(nullptr),
     fNewRecipientAllowed(true),
     fFeeMinimized(true),
-    platformStyle(_platformStyle)
+    platformStyle(_platformStyle),
+    fCreateUnsignedTransactionCheckedPrev(Qt::Checked)
 {
     ui->setupUi(this);
 
@@ -125,6 +129,15 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->customFee->SetAllowEmpty(false);
     ui->customFee->setValue(settings.value("nTransactionFee").toLongLong());
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
+
+    // init unsigned transaction related options
+    ui->checkBoxCreateUnsignedTransaction->setChecked(false);
+    ui->checkBoxIncludeWatchonlyCoins->setChecked(false);
+    ui->labelWatchonlyText->setVisible(false);
+    ui->labelWatchonlyBalance->setVisible(false);
+    ui->labelWatchonlySeparator->setVisible(false);
+    connect(ui->checkBoxCreateUnsignedTransaction, SIGNAL(stateChanged(int)), this, SLOT(createUnsignedTransactionChecked(int)));
+    connect(ui->checkBoxIncludeWatchonlyCoins, SIGNAL(stateChanged(int)), this, SLOT(includeWatchonlyCoinsChecked(int)));
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -162,6 +175,10 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         connect(_model->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &SendCoinsDialog::coinControlFeatureChanged);
         ui->frameCoinControl->setVisible(_model->getOptionsModel()->getCoinControlFeatures());
         coinControlUpdateLabels();
+
+        // offline transactions
+        connect(_model->getOptionsModel(), SIGNAL(offlineTransactionFeaturesChanged(bool)), this, SLOT(offlineTransactionFeatureChanged(bool)));
+        ui->widgetOfflineTransactions->setVisible(_model->getOptionsModel()->getOfflineTransactionFeatures());
 
         // fee section
         for (const int n : confTargets) {
@@ -366,28 +383,47 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
         questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
-    confirmationDialog.exec();
-    QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmationDialog.result());
 
-    if(retval != QMessageBox::Yes)
-    {
+    if (!ui->checkBoxCreateUnsignedTransaction->isChecked()) {
+        confirmationDialog.exec();
+        QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmationDialog.result());
+
+        if(retval != QMessageBox::Yes)
+        {
+            fNewRecipientAllowed = true;
+            return;
+        }
+
+        // now send the prepared transaction
+        WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
+        // process sendStatus and on error generate message shown to user
+        processSendCoinsReturn(sendStatus);
+
+        if (sendStatus.status == WalletModel::OK)
+        {
+            accept();
+            CoinControlDialog::coinControl()->UnSelectAll();
+            coinControlUpdateLabels();
+            Q_EMIT coinsSent(currentTransaction.getWtx()->get().GetHash());
+        }
         fNewRecipientAllowed = true;
         return;
-    }
+    } else {
+        // Create unsigned transaction, don't send
+        PartiallySignedTransaction psbtx(currentTransaction.getWtx()->get());
+        model->FillPSBT(psbtx, 1 /* XXX constant -- SIGHASH_ALL? */, false, true);
 
-    // now send the prepared transaction
-    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
-    // process sendStatus and on error generate message shown to user
-    processSendCoinsReturn(sendStatus);
+        // Serialize the PSBT
+        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+        ssTx << psbtx;
+        std::string result = EncodeBase64(ssTx.str());
 
-    if (sendStatus.status == WalletModel::OK)
-    {
-        accept();
-        CoinControlDialog::coinControl()->UnSelectAll();
-        coinControlUpdateLabels();
-        Q_EMIT coinsSent(currentTransaction.getWtx()->get().GetHash());
+        OfflineTransactionsDialog *dlg = new OfflineTransactionsDialog(this, model, clientModel);
+        dlg->setTransactionData(&result);
+        dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
+        dlg->setAttribute(Qt::WA_DeleteOnClose);
+        dlg->exec();
     }
-    fNewRecipientAllowed = true;
 }
 
 void SendCoinsDialog::clear()
@@ -528,11 +564,17 @@ bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
     return true;
 }
 
+void SendCoinsDialog::setIncludeWatchonly(bool allow) {
+    ui->checkBoxIncludeWatchonlyCoins->setCheckState(
+                allow ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+}
+
 void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
 {
     if(model && model->getOptionsModel())
     {
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
+        ui->labelWatchonlyBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.watch_only_balance));
     }
 }
 
@@ -669,6 +711,12 @@ void SendCoinsDialog::updateCoinControlState(CCoinControl& ctrl)
         ctrl.m_feerate = CFeeRate(ui->customFee->value());
     } else {
         ctrl.m_feerate.reset();
+    }
+
+    if (ui->checkBoxIncludeWatchonlyCoins->isChecked()) {
+        ctrl.fAllowWatchOnly = true;
+    } else {
+        ctrl.fAllowWatchOnly = false;
     }
     // Avoid using global defaults when sending money from the GUI
     // Either custom fee will be used or if not selected, the confirmation target from dropdown box
@@ -878,6 +926,44 @@ void SendCoinsDialog::coinControlUpdateLabels()
         ui->labelCoinControlAutomaticallySelected->show();
         ui->widgetCoinControl->hide();
         ui->labelCoinControlInsuffFunds->hide();
+    }
+}
+
+// Offline Transactions: settings menu - offline transaction settings enabled/disabled by user
+void SendCoinsDialog::offlineTransactionFeatureChanged(bool checked)
+{
+    ui->widgetOfflineTransactions->setVisible(checked);
+
+    if (!checked && model) { // offline transaction features disabled
+        ui->checkBoxIncludeWatchonlyCoins->setCheckState(Qt::Unchecked);
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(Qt::Unchecked);
+    }
+}
+
+// Offline Transactions: create unsigned Transaction checkbox
+void SendCoinsDialog::createUnsignedTransactionChecked(int state) {
+    if (state == Qt::Checked) {
+        ui->sendButton->setText(QStringLiteral("Create Unsigned"));
+    } else {
+        ui->sendButton->setText(QStringLiteral("Send"));
+    }
+}
+
+// Offline Transactions: include watchonly coins checkbox
+void SendCoinsDialog::includeWatchonlyCoinsChecked(int state) {
+    if (state == Qt::Checked) {
+        fCreateUnsignedTransactionCheckedPrev = ui->checkBoxCreateUnsignedTransaction->checkState();
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(Qt::Checked);
+        ui->checkBoxCreateUnsignedTransaction->setEnabled(false);
+        ui->labelWatchonlyText->setVisible(true);
+        ui->labelWatchonlyBalance->setVisible(true);
+        ui->labelWatchonlySeparator->setVisible(true);
+    } else {
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(fCreateUnsignedTransactionCheckedPrev);
+        ui->checkBoxCreateUnsignedTransaction->setEnabled(true);
+        ui->labelWatchonlyText->setVisible(false);
+        ui->labelWatchonlyBalance->setVisible(false);
+        ui->labelWatchonlySeparator->setVisible(false);
     }
 }
 
