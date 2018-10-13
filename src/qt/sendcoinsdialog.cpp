@@ -232,6 +232,7 @@ SendCoinsDialog::~SendCoinsDialog()
 
 void SendCoinsDialog::on_sendButton_clicked()
 {
+    __asm("int3");
     if(!model || !model->getOptionsModel())
         return;
 
