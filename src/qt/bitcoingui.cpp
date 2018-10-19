@@ -415,9 +415,9 @@ void BitcoinGUI::createActions()
         });
 
         // offlineCreateAction is special because it needs to open the send coins page,
-        //   which can only be correctly done from inside BitcoinVGui. XXX jank level: medium
+        //   which can only be correctly done from inside BitcoinGui. XXX jank level: medium
         connect(offlineCreateAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineCreate);
-        connect(offlineCreateAction, &QAction::triggered, [this]{ gotoSendCoinsPage() });
+        connect(offlineCreateAction, &QAction::triggered, [this]{ gotoSendCoinsPage(); });
         connect(offlineSignAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineSign);
         connect(offlineBroadcastAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineBroadcast);
     }
