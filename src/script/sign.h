@@ -715,8 +715,11 @@ struct PartiallySignedTransaction
             throw std::ios_base::failure("Outputs provided does not match the number of outputs in transaction.");
         }
         // Sanity check
+        __asm("int3");
         if (!IsSane()) {
-            throw std::ios_base::failure("PSBT is not sane.");
+            //__asm("int3");
+            //throw std::ios_base::failure("PSBT is not sane.");
+            printf("WARNING: PSBT IS NOT SANE\n");
         }
     }
 
