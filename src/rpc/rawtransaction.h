@@ -13,6 +13,12 @@ namespace interfaces {
 class Chain;
 } // namespace interfaces
 
+/** Broadcast a transaction */
+std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees = false);
+
+/** Finalize a PSBT */
+void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete);
+
 /** Sign a transaction with the given keystore and previous transactions */
 UniValue SignTransaction(interfaces::Chain& chain, CMutableTransaction& mtx, const UniValue& prevTxs, CBasicKeyStore *keystore, bool tempKeystore, const UniValue& hashType);
 

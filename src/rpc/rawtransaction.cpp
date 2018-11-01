@@ -1044,8 +1044,6 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
             + HelpExampleRpc("sendrawtransaction", "\"signedhex\"")
         );
 
-    std::promise<void> promise;
-
     RPCTypeCheck(request.params, {UniValue::VSTR, UniValue::VBOOL});
 
     // parse hex string from parameter
@@ -1053,10 +1051,17 @@ static UniValue sendrawtransaction(const JSONRPCRequest& request)
     if (!DecodeHexTx(mtx, request.params[0].get_str()))
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "TX decode failed");
     CTransactionRef tx(MakeTransactionRef(std::move(mtx)));
+
+    bool allowhighfees = !request.params[1].isNull() && request.params[1].get_bool();
+    return BroadcastTransaction(tx, allowhighfees);
+}
+
+std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees) {
+    std::promise<void> promise;
     const uint256& hashTx = tx->GetHash();
 
     CAmount nMaxRawTxFee = maxTxFee;
-    if (!request.params[1].isNull() && request.params[1].get_bool())
+    if (allowhighfees)
         nMaxRawTxFee = 0;
 
     { // cs_main scope
@@ -1585,18 +1590,36 @@ UniValue finalizepsbt(const JSONRPCRequest& request)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, strprintf("TX decode failed %s", error));
     }
 
+    bool complete = true;
+    bool extract = request.params[1].isNull() || (!request.params[1].isNull() && request.params[1].get_bool());
+
+    std::string result_str;
+    bool complete;
+    FinalizePSBT(psbtx, extract, result_str, complete);
+
+    UniValue result(UniValue::VOBJ);
+
+    if (complete && extract) {
+        result.pushKV("hex", result_str);
+    } else {
+        result.pushKV("psbt", result_str);
+    }
+    result.pushKV("complete", complete);
+
+    return result;
+}
+
+void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) {
     // Finalize input signatures -- in case we have partial signatures that add up to a complete
     //   signature, but have not combined them yet (e.g. because the combiner that created this
     //   PartiallySignedTransaction did not understand them), this will combine them into a final
     //   script.
-    bool complete = true;
+    complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
         complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, SIGHASH_ALL);
     }
 
-    UniValue result(UniValue::VOBJ);
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    bool extract = request.params[1].isNull() || (!request.params[1].isNull() && request.params[1].get_bool());
     if (complete && extract) {
         CMutableTransaction mtx(*psbtx.tx);
         for (unsigned int i = 0; i < mtx.vin.size(); ++i) {
@@ -1604,14 +1627,11 @@ UniValue finalizepsbt(const JSONRPCRequest& request)
             mtx.vin[i].scriptWitness = psbtx.inputs[i].final_script_witness;
         }
         ssTx << mtx;
-        result.pushKV("hex", HexStr(ssTx.str()));
+        result = HexStr(ssTx.str());
     } else {
         ssTx << psbtx;
-        result.pushKV("psbt", EncodeBase64(ssTx.str()));
+        result = EncodeBase64(ssTx.str());
     }
-    result.pushKV("complete", complete);
-
-    return result;
 }
 
 UniValue createpsbt(const JSONRPCRequest& request)

@@ -71,6 +71,12 @@ public:
     //! Fill in partially signed transaction using wallet info.
     virtual bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs) = 0;
 
+    //! Broadcast a CTransactionRef to the network.
+    virtual std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees = false) = 0;  // XXX should maybe be bool, can we tell if it worked?
+
+    //! Finalize a PartiallySignedTransaction. */
+    virtual void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) = 0;
+
     //! Abort a rescan.
     virtual void abortRescan() = 0;
 
