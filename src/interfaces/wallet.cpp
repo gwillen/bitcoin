@@ -15,6 +15,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
+#include <rpc/rawtransaction.h> // XXX noooooo gross don't
 #include <rpc/server.h>
 #include <scheduler.h>
 #include <script/ismine.h>
@@ -152,6 +153,12 @@ public:
     }
     bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs) override {
         return ::FillPSBT(&m_wallet, psbtx, sighash_type, sign, bip32derivs);
+    }
+    std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees) override {
+        return ::BroadcastTransaction(tx, allowhighfees);
+    }
+    void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) override {
+        return ::FinalizePSBT(psbtx, extract, result, complete);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }

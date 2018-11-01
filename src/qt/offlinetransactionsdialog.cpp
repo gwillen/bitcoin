@@ -260,5 +260,33 @@ void OfflineTransactionsDialog::signTransaction() {
 }
 
 void OfflineTransactionsDialog::broadcastTransaction() {
-    //XXX hmmmmmmm.
+    PartiallySignedTransaction psbtx;
+    std::string error;
+    if (!DecodePSBT(psbtx, ui->transactionData3->toPlainText().toStdString(), error)) {
+        // XXX miserable failure, signal some kind of error here
+        return;
+    }
+
+    //void WalletModel::FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) {
+    // XXX kill the above interface I guess, we don't need it?
+    // XXX but the below is gross because it's duplicating code to do the finalization, should be in a single place, like a psbt file.
+    // XXX in the meantime, the below is open-coded as a copy of FinalizePSBT aka finalizepsbt.
+    bool complete;
+    complete = true;
+    for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
+        PSBTInput& input = psbtx.inputs.at(i);
+        complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, *psbtx.tx, input, i, 1);
+    }
+    if (!complete) {
+        // XXX miserable failure, signal error
+        return;
+    }
+    CMutableTransaction mtx(*psbtx.tx);
+    for (unsigned int i = 0; i < mtx.vin.size(); ++i) {
+        mtx.vin[i].scriptSig = psbtx.inputs[i].final_script_sig;
+        mtx.vin[i].scriptWitness = psbtx.inputs[i].final_script_witness;
+    }
+    CTransactionRef tx = MakeTransactionRef(mtx);
+    std::string txid = walletModel->BroadcastTransaction(tx);
+    ui->transactionData3->setPlainText(QString::fromStdString(txid + " is the txid that we broadcast."));
 }

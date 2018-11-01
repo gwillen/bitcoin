@@ -378,6 +378,14 @@ bool WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, 
     return m_wallet->FillPSBT(psbtx, sighash_type, sign, bip32derivs);
 }
 
+std::string WalletModel::BroadcastTransaction(CTransactionRef tx, bool allowhighfees) {
+    return m_wallet->BroadcastTransaction(tx, allowhighfees);
+}
+
+void WalletModel::FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) {
+    return m_wallet->FinalizePSBT(psbtx, extract, result, complete);
+}
+
 // Handlers for core signals
 static void NotifyUnload(WalletModel* walletModel)
 {
