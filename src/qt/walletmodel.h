@@ -188,7 +188,6 @@ public:
 
     bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs);
     std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees = false);
-    void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete);
 
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext

@@ -157,9 +157,6 @@ public:
     std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees) override {
         return ::BroadcastTransaction(tx, allowhighfees);
     }
-    void FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) override {
-        return ::FinalizePSBT(psbtx, extract, result, complete);
-    }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }
     std::string getWalletName() override { return m_wallet->GetName(); }
