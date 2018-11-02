@@ -384,10 +384,6 @@ std::string WalletModel::BroadcastTransaction(CTransactionRef tx, bool allowhigh
     return m_wallet->BroadcastTransaction(tx, allowhighfees);
 }
 
-void WalletModel::FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) {
-    return m_wallet->FinalizePSBT(psbtx, extract, result, complete);
-}
-
 // Handlers for core signals
 static void NotifyUnload(WalletModel* walletModel)
 {

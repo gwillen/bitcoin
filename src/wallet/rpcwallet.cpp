@@ -3835,10 +3835,8 @@ void AddKeypathToMap(const CWallet* pwallet, const CKeyID& keyID, std::map<CPubK
 
 bool FillPSBT(const CWallet* pwallet, PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs)
 {
-    const CTransaction txConstx(*psbtx.tx);
-    const CTransaction *txConst = &txConstx;  // XXX
-
     LOCK(pwallet->cs_wallet);
+
     // Get all of the previous transactions
     bool complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {

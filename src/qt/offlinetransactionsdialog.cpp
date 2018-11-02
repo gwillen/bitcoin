@@ -249,7 +249,7 @@ void OfflineTransactionsDialog::signTransaction() {
         return;
     }
 
-    if (!walletModel->FillPSBT(psbt, 1 /* XXX */, true, true)) {
+    if (!walletModel->FillPSBT(psbt, SIGHASH_ALL, true, true)) {
         //XXX oops, it worked but warn that it's still incomplete and can't be broadcast yet
         // maybe colorize or something?
     }
@@ -267,15 +267,11 @@ void OfflineTransactionsDialog::broadcastTransaction() {
         return;
     }
 
-    //void WalletModel::FinalizePSBT(PartiallySignedTransaction& psbtx, bool extract, std::string& result, bool& complete) {
-    // XXX kill the above interface I guess, we don't need it?
-    // XXX but the below is gross because it's duplicating code to do the finalization, should be in a single place, like a psbt file.
-    // XXX in the meantime, the below is open-coded as a copy of FinalizePSBT aka finalizepsbt.
+    // XXX hmm, the psbt code that's not wallet-based should NOT go through teh wallet model. But somehow we should be able to call out to it instead of open-code it.
     bool complete;
     complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
-        PSBTInput& input = psbtx.inputs.at(i);
-        complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, *psbtx.tx, input, i, 1);
+        complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, SIGHASH_ALL);
     }
     if (!complete) {
         // XXX miserable failure, signal error
