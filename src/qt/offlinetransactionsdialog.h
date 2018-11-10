@@ -35,15 +35,15 @@ public:
     explicit OfflineTransactionsDialog(QWidget *parent, WalletModel *walletModel, ClientModel *clientModel);
     ~OfflineTransactionsDialog();
 
-    void setTransactionData(const std::string *transaction);
+    void setFirstTabTransaction(const CTransactionRef tx);
     void setWorkflowState(enum WorkflowState);
     enum WorkflowState workflowState();
 
 public Q_SLOTS:
-    void saveToFile(const QPlainTextEdit *transactionData);
-    void loadFromFile(QPlainTextEdit *transactionData);
-    void clipboardCopy(const QPlainTextEdit *transactionData);
-    void clipboardPaste(QPlainTextEdit *transactionData);
+    void saveToFile(int tabId);
+    void loadFromFile(int tabId);
+    void clipboardCopy(int tabId);
+    void clipboardPaste(int tabId);
 
     void nextState();
     void prevState();
@@ -55,7 +55,8 @@ public Q_SLOTS:
 
 private:
     Ui::OfflineTransactionsDialog *ui;
-    QPlainTextEdit transactionData[3];  // indexed by tab
+    PartiallySignedTransaction transactionData[4];  // 1-indexed by tab to avoid confusion; 0 unused
+    QPlainTextEdit *(transactionText[4]);  // 1-indexed by tab to avoid confusion; 0 unused
     WalletModel *walletModel;
     ClientModel *clientModel;
 };
