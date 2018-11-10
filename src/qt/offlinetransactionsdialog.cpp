@@ -89,24 +89,28 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
     bool offline = false;
     onlineStateChanged(offline); // XXX base this on reality instead
 
-    ui->transactionData1->setWordWrapMode(QTextOption::WrapAnywhere);  // XXX don't know how to set this property in Designer
-    ui->transactionData2->setWordWrapMode(QTextOption::WrapAnywhere);
-    ui->transactionData3->setWordWrapMode(QTextOption::WrapAnywhere);
+    transactionText[1] = ui->transactionData1;
+    transactionText[2] = ui->transactionData2;
+    transactionText[3] = ui->transactionData3;
+
+    for (int i = 1; i <= 3; ++i) {
+        transactionText[i]->setWordWrapMode(QTextOption::WrapAnywhere);  // XXX don't know how to set this property in Designer
+    }
 
     //XXX
     connect(ui->checkBoxOnlineOffline, SIGNAL(clicked(bool)), this, SLOT(onlineStateChanged(bool)));
 
-    connect(ui->saveToFileButton1, &QPushButton::clicked, [this](){ saveToFile(ui->transactionData1); });
-    connect(ui->saveToFileButton2, &QPushButton::clicked, [this](){ saveToFile(ui->transactionData2); });
+    connect(ui->saveToFileButton1, &QPushButton::clicked, [this](){ saveToFile(1); });
+    connect(ui->saveToFileButton2, &QPushButton::clicked, [this](){ saveToFile(2); });
 
-    connect(ui->copyToClipboardButton1, &QPushButton::clicked, [this](){ clipboardCopy(ui->transactionData1); });
-    connect(ui->copyToClipboardButton2, &QPushButton::clicked, [this](){ clipboardCopy(ui->transactionData2); });
+    connect(ui->copyToClipboardButton1, &QPushButton::clicked, [this](){ clipboardCopy(1); });
+    connect(ui->copyToClipboardButton2, &QPushButton::clicked, [this](){ clipboardCopy(2); });
 
-    connect(ui->loadFromFileButton2, &QPushButton::clicked, [this]() { loadFromFile(ui->transactionData2); });
-    connect(ui->loadFromFileButton3, &QPushButton::clicked, [this]() { loadFromFile(ui->transactionData3); });
+    connect(ui->loadFromFileButton2, &QPushButton::clicked, [this]() { loadFromFile(2); });
+    connect(ui->loadFromFileButton3, &QPushButton::clicked, [this]() { loadFromFile(3); });
 
-    connect(ui->pasteButton2, &QPushButton::clicked, [this]() { clipboardPaste(ui->transactionData2); });
-    connect(ui->pasteButton3, &QPushButton::clicked, [this]() { clipboardPaste(ui->transactionData3); });
+    connect(ui->pasteButton2, &QPushButton::clicked, [this]() { clipboardPaste(2); });
+    connect(ui->pasteButton3, &QPushButton::clicked, [this]() { clipboardPaste(3); });
 
     connect(ui->signTransactionButton, SIGNAL(clicked()), this, SLOT(signTransaction()));
     connect(ui->broadcastTransactionButton, SIGNAL(clicked()), this, SLOT(broadcastTransaction()));
@@ -123,9 +127,19 @@ OfflineTransactionsDialog::~OfflineTransactionsDialog()
     delete ui;
 }
 
-void OfflineTransactionsDialog::setTransactionData(const std::string *transaction) {
-    //XXX
-    ui->transactionData1->setPlainText(QString::fromStdString(*transaction));
+void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx) {
+    setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
+
+    PartiallySignedTransaction psbtx(*tx);
+    // XXX hm, this is a gross place to do all this work though.
+    walletModel->FillPSBT(psbtx, SIGHASH_ALL, false, true);
+    transactionData[1] = psbtx;
+
+    // Serialize the PSBT
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << psbtx;
+    std::string result = EncodeBase64(ssTx.str());
+    ui->transactionData1->setPlainText(QString::fromStdString(result));
 }
 
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state) {
@@ -141,7 +155,7 @@ void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog:
         break;
     }
 
-    // This shouldn't really be necessary, but seems to be?
+    // This shouldn't really be necessary, but seems to be? But possibly only on my machine? XXX :-( See https://github.com/bitcoin/bitcoin/issues/14469 .
     ui->nextButton->repaint();
     ui->prevButton->repaint();
 
@@ -183,37 +197,64 @@ void OfflineTransactionsDialog::prevState() {
     }
 }
 
-void OfflineTransactionsDialog::saveToFile(const QPlainTextEdit *transactionData) {
+void OfflineTransactionsDialog::saveToFile(int tabId) {
     QString filename = GUIUtil::getSaveFileName(this,
         tr("Save Transaction Data"), QString(),
         tr("Partially Signed Transaction (*.psbt)"), nullptr);
-
-    if (filename.isEmpty())
+    if (filename.isEmpty()) {
         return;
+    }
 
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << transactionData[tabId];
     std::ofstream out(filename.toLocal8Bit().data());
-    out << transactionData->toPlainText().toStdString();
+    out << ssTx.str(); // XXX should we allow writing base64?
     out.close();
-    // XXX binary instead?
 }
 
-void OfflineTransactionsDialog::loadFromFile(QPlainTextEdit *transactionData) {
+void OfflineTransactionsDialog::loadFromFile(int tabId) {
     QString filename = GUIUtil::getOpenFileName(this,
         tr("Load Transaction Data"), QString(),
         tr("Partially Signed Transaction (*.psbt)"), nullptr);
+    if (filename.isEmpty()) {
+        return;
+    }
 
     std::ifstream in(filename.toLocal8Bit().data());
     std::string data;
     in >> data;
-    transactionData->setPlainText(QString::fromStdString(data));
+    bool invalid;
+    std::string decoded = DecodeBase64(data, &invalid);
+    if (!invalid) {
+        data = decoded;
+    }
+    std::string error;
+    if (!DecodeRawPSBT(transactionData[tabId], data, error)) {
+        // XXX this is bad, signal "error"
+        return;
+    }
+    // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
+    transactionText[tabId]->setPlainText(QString::fromStdString(EncodeBase64(data)));
 }
 
-void OfflineTransactionsDialog::clipboardCopy(const QPlainTextEdit *transactionData) {
-    QApplication::clipboard()->setText(transactionData->toPlainText());
+void OfflineTransactionsDialog::clipboardCopy(int tabId) {
+    QApplication::clipboard()->setText(transactionText[tabId]->toPlainText());
 }
 
-void OfflineTransactionsDialog::clipboardPaste(QPlainTextEdit *transactionData) {
-    transactionData->setPlainText(QApplication::clipboard()->text());
+void OfflineTransactionsDialog::clipboardPaste(int tabId) {
+    std::string data = QApplication::clipboard()->text().toStdString();
+    bool invalid;
+    std::string decoded = DecodeBase64(data, &invalid);
+    if (invalid) {
+        // XXX this is bad
+        return;
+    }
+    std::string error;
+    if (!DecodeRawPSBT(transactionData[tabId], decoded, error)) {
+        // XXX this is bad, signal "error"
+        return;
+    }
+    transactionText[tabId]->setPlainText(QString::fromStdString(data));
 }
 
 void OfflineTransactionsDialog::onlineStateChanged(bool online) {
@@ -221,60 +262,28 @@ void OfflineTransactionsDialog::onlineStateChanged(bool online) {
     ui->stackedWidgetStep3->setCurrentIndex(online); // only broadcast if we're online
 }
 
-/* XXX
-        // Create unsigned transaction, don't send
-        PartiallySignedTransaction psbtx(currentTransaction.getWtx()->get());
-        //... XXX should we do this inside OTD maybe???
-        model->FillPSBT(psbtx, 1 / * XXX constant -- SIGHASH_ALL? * /, false, true);
-
-        // Serialize the PSBT
-        CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-        ssTx << psbtx;
-        std::string result = EncodeBase64((unsigned char*)ssTx.data(), ssTx.size());
-
-        OfflineTransactionsDialog *dlg = new OfflineTransactionsDialog(this, model, clientModel);
-        dlg->setTransactionData(&result);
-        dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
-        dlg->setAttribute(Qt::WA_DeleteOnClose);
-        dlg->exec();
-        // XXX END ganked from rpcwallet.cpp walletcreatefundedpsbt
-*/
-
 void OfflineTransactionsDialog::signTransaction() {
-    //XXX -- just call fillpsbt again with sign set to true
-    PartiallySignedTransaction psbt;
-    std::string error;
-    if (!DecodePSBT(psbt, ui->transactionData2->toPlainText().toStdString(), error)) {
-        // XXX miserable failure, signal some kind of error here
-        return;
-    }
-
-    if (!walletModel->FillPSBT(psbt, SIGHASH_ALL, true, true)) {
+    if (!walletModel->FillPSBT(transactionData[2], SIGHASH_ALL, true, true)) {
         //XXX oops, it worked but warn that it's still incomplete and can't be broadcast yet
         // maybe colorize or something?
     }
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << psbt;
+    ssTx << transactionData[2];
     ui->transactionData2->setPlainText(QString::fromStdString(EncodeBase64(ssTx.str())));
 }
 
 void OfflineTransactionsDialog::broadcastTransaction() {
-    PartiallySignedTransaction psbtx;
-    std::string error;
-    if (!DecodePSBT(psbtx, ui->transactionData3->toPlainText().toStdString(), error)) {
-        // XXX miserable failure, signal some kind of error here
-        return;
-    }
-
+    PartiallySignedTransaction psbtx = transactionData[3];
     // XXX hmm, the psbt code that's not wallet-based should NOT go through teh wallet model. But somehow we should be able to call out to it instead of open-code it.
-    bool complete;
-    complete = true;
+    bool complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
+        // We're not just broadcasting here, we're finalizing, which is slightly misleading?
         complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, SIGHASH_ALL);
     }
     if (!complete) {
         // XXX miserable failure, signal error
+        // XXX we mutated our transaction here, should probably have updated the display...
         return;
     }
     CMutableTransaction mtx(*psbtx.tx);
@@ -284,5 +293,6 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     }
     CTransactionRef tx = MakeTransactionRef(mtx);
     std::string txid = walletModel->BroadcastTransaction(tx);
-    ui->transactionData3->setPlainText(QString::fromStdString(txid + " is the txid that we broadcast."));
+    transactionData[3] = PartiallySignedTransaction(); // XXX remove stale data
+    ui->transactionData3->setPlainText(QString::fromStdString(txid + " is the txid that we broadcast.")); // XXX this is gross
 }

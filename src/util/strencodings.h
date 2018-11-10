@@ -49,11 +49,11 @@ bool IsHex(const std::string& str);
 */
 bool IsHexNumber(const std::string& str);
 std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid = nullptr);
-std::string DecodeBase64(const std::string& str);
+std::string DecodeBase64(const std::string& str, bool* pfInvalid = nullptr);
 std::string EncodeBase64(const unsigned char* pch, size_t len);
 std::string EncodeBase64(const std::string& str);
 std::vector<unsigned char> DecodeBase32(const char* p, bool* pfInvalid = nullptr);
-std::string DecodeBase32(const std::string& str);
+std::string DecodeBase32(const std::string& str, bool* pfInvalid = nullptr);
 std::string EncodeBase32(const unsigned char* pch, size_t len);
 std::string EncodeBase32(const std::string& str);
 

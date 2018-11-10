@@ -408,18 +408,18 @@ void SendCoinsDialog::on_sendButton_clicked()
         }
         fNewRecipientAllowed = true;
         return;
-    } else {
+    } else { /*
         // Create unsigned transaction, don't send
         PartiallySignedTransaction psbtx(currentTransaction.getWtx()->get());
-        model->FillPSBT(psbtx, 1 /* XXX constant -- SIGHASH_ALL? */, false, true);
+        model->FillPSBT(psbtx, SIGHASH_ALL, false, true);
 
         // Serialize the PSBT
         CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
         ssTx << psbtx;
         std::string result = EncodeBase64(ssTx.str());
-
+*/
         OfflineTransactionsDialog *dlg = new OfflineTransactionsDialog(this, model, clientModel);
-        dlg->setTransactionData(&result);
+        dlg->setFirstTabTransaction(MakeTransactionRef(currentTransaction.getWtx()->get())); // XXX not sure if transactionref is the right thing here
         dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
         dlg->setAttribute(Qt::WA_DeleteOnClose);
         dlg->exec();

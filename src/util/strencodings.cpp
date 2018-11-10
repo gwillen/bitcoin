@@ -188,9 +188,9 @@ std::vector<unsigned char> DecodeBase64(const char* p, bool* pfInvalid)
     return ret;
 }
 
-std::string DecodeBase64(const std::string& str)
+std::string DecodeBase64(const std::string& str, bool* pfInvalid)
 {
-    std::vector<unsigned char> vchRet = DecodeBase64(str.c_str());
+    std::vector<unsigned char> vchRet = DecodeBase64(str.c_str(), pfInvalid);
     return std::string((const char*)vchRet.data(), vchRet.size());
 }
 
@@ -257,9 +257,9 @@ std::vector<unsigned char> DecodeBase32(const char* p, bool* pfInvalid)
     return ret;
 }
 
-std::string DecodeBase32(const std::string& str)
+std::string DecodeBase32(const std::string& str, bool* pfInvalid)
 {
-    std::vector<unsigned char> vchRet = DecodeBase32(str.c_str());
+    std::vector<unsigned char> vchRet = DecodeBase32(str.c_str(), pfInvalid);
     return std::string((const char*)vchRet.data(), vchRet.size());
 }
 
