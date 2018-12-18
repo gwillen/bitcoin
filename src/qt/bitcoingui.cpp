@@ -326,8 +326,8 @@ void BitcoinGUI::createActions()
     offlineCreateAction->setStatusTip(tr("Open the send dialog configured to create an unsigned offline transaction"));
     offlineSignAction = new QAction(platformStyle->TextColorIcon(":/icons/key"), tr("&Sign offline transaction..."), this);
     offlineSignAction->setStatusTip(tr("Sign a transaction on an offline computer"));
-    offlineBroadcastAction = new QAction(platformStyle->TextColorIcon(":/icons/connect4"), tr("&Broadcast offline transaction..."), this);
-    offlineBroadcastAction->setStatusTip(tr("Broadcast a signed transaction copied from an offline computer"));
+    offlineBroadcastAction = new QAction(platformStyle->TextColorIcon(":/icons/connect4"), tr("&Assemble and broadcast offline transaction..."), this);
+    offlineBroadcastAction->setStatusTip(tr("Assemble and broadcast signed transaction(s) copied from an offline computer"));
 
     openRPCConsoleAction = new QAction(platformStyle->TextColorIcon(":/icons/debugwindow"), tr("&Debug window"), this);
     openRPCConsoleAction->setStatusTip(tr("Open debugging and diagnostic console"));

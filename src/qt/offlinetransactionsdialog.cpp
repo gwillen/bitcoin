@@ -6,10 +6,12 @@
 #include <util/strencodings.h>
 
 #include <qt/offlinetransactionsdialog.h>
+
+#include <qt/bitcoinunits.h>
 #include <qt/forms/ui_offlinetransactionsdialog.h>
 #include <qt/guiutil.h>
-
 #include <qt/transactiontablemodel.h>
+#include <univalue.h>
 
 #include <QModelIndex>
 #include <QClipboard>
@@ -76,6 +78,13 @@ XXX */
 //   we can probably do that if the offline stuff box is checked
 //   maybe we add an 'offline' menu with all three steps, the first going to the
 //   send box with offline prechecked
+
+//XXX
+std::string serializeTransaction(PartiallySignedTransaction psbtx) {
+    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
+    ssTx << psbtx;
+    return ssTx.str();
+}
 
 OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletModel *walletModel, ClientModel *clientModel) :
     QDialog(parent),
@@ -237,11 +246,11 @@ void OfflineTransactionsDialog::loadFromFile(int tabId) {
         return;
     }
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
-    transactionText[tabId]->setPlainText(QString::fromStdString(EncodeBase64(data)));
+    transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
 }
 
 void OfflineTransactionsDialog::clipboardCopy(int tabId) {
-    QApplication::clipboard()->setText(transactionText[tabId]->toPlainText());
+    QApplication::clipboard()->setText(QString::fromStdString(EncodeBase64(serializeTransaction(transactionData[tabId]))));
 }
 
 void OfflineTransactionsDialog::clipboardPaste(int tabId) {
@@ -257,7 +266,7 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId) {
         // XXX this is bad, signal "error"
         return;
     }
-    transactionText[tabId]->setPlainText(QString::fromStdString(data));
+    transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
 }
 
 void OfflineTransactionsDialog::onlineStateChanged(bool online) {
@@ -271,9 +280,7 @@ void OfflineTransactionsDialog::signTransaction() {
         // maybe colorize or something?
     }
 
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << transactionData[2];
-    ui->transactionData2->setPlainText(QString::fromStdString(EncodeBase64(ssTx.str())));
+    ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(transactionData[2])));
 }
 
 void OfflineTransactionsDialog::broadcastTransaction() {
@@ -295,7 +302,252 @@ void OfflineTransactionsDialog::broadcastTransaction() {
         mtx.vin[i].scriptWitness = psbtx.inputs[i].final_script_witness;
     }
     CTransactionRef tx = MakeTransactionRef(mtx);
-    std::string txid = walletModel->BroadcastTransaction(tx);
+    std::string message;
+    try {
+        message = "Transaction broadcast successfully! Transaction ID: " + walletModel->BroadcastTransaction(tx);
+    } catch (UniValue &e) {
+        message = "Transaction broadcast failed: "+ e.write();
+    }
     transactionData[3] = PartiallySignedTransaction(); // XXX remove stale data
-    ui->transactionData3->setPlainText(QString::fromStdString(txid + " is the txid that we broadcast.")); // XXX this is gross
+    ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross
 }
+
+//XXX
+UniValue AnalyzePSBT(PartiallySignedTransaction psbtx);
+
+std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransaction psbtx) {
+    if (false) {
+        // render as Base64
+        return EncodeBase64(serializeTransaction(psbtx));
+    } else {
+        // read as human-readable
+        UniValue analysis = AnalyzePSBT(psbtx);
+
+        // XXX copied from sendcoinsdialog.cpp
+        QString questionString = tr("Transaction preview: ");
+        questionString.append(analysis.write().c_str());
+        questionString.append("<br /><span style='font-size:10pt;'>");
+        questionString.append(tr("Please, review your transaction."));
+        questionString.append("</span><br />%1");
+
+        double txFee = -1;
+        if (analysis.exists("fee") && analysis["fee"].isNum()) {
+            txFee = analysis["fee"].get_real();  /* this is a double WHY? XXX */
+        }
+
+        if(txFee > 0)
+        {
+            // append fee string if a fee is required
+            questionString.append("<hr /><b>");
+            questionString.append(tr("Transaction fee"));
+            questionString.append("</b>");
+
+            // append transaction size
+            //questionString.append(" (" + QString::number((double)currentTransaction.getTransactionSize() / 1000) + " kB): ");
+
+            // append transaction fee value
+            questionString.append("<span style='color:#aa0000; font-weight:bold;'>");
+            questionString.append(BitcoinUnits::formatHtmlWithUnit(BitcoinUnits::BTC, txFee * 100000000)); // XXX
+            //XXXquestionString.append(txFee);
+            questionString.append("</span><br />");
+
+            // append RBF message according to transaction's signalling
+            //questionString.append("<span style='font-size:10pt; font-weight:normal;'>");
+            //if (ui->optInRBF->isChecked()) {
+            //    questionString.append(tr("You can increase the fee later (signals Replace-By-Fee, BIP-125)."));
+            //} else {
+            //    questionString.append(tr("Not signalling Replace-By-Fee, BIP-125."));
+            //}
+            //questionString.append("</span>");
+        }
+/*
+        // add total amount in all subdivision units
+        questionString.append("<hr />");
+        CAmount totalAmount = currentTransaction.getTotalTransactionAmount() + txFee;
+        QStringList alternativeUnits;
+        for (const BitcoinUnits::Unit u : BitcoinUnits::availableUnits())
+        {
+            if(u != model->getOptionsModel()->getDisplayUnit())
+                alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
+        }
+        questionString.append(QString("<b>%1</b>: <b>%2</b>").arg(tr("Total Amount"))
+            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount)));
+        questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
+            .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+        SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
+            questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
+        }
+        */
+        return questionString.toStdString();
+    }
+}
+
+//XXX
+
+bool GetUTXO(PSBTInput& pi, CTxOut& utxo, int prevout_index)
+{
+    if (pi.non_witness_utxo) {
+        utxo = pi.non_witness_utxo->vout[prevout_index];
+    } else if (!pi.witness_utxo.IsNull()) {
+        utxo = pi.witness_utxo;
+    } else {
+        return false;
+    }
+    return true;
+}
+
+// XXX stolen from https://github.com/bitcoin/bitcoin/pull/13932/files
+UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
+    // Go through each input and build status
+    UniValue result(UniValue::VOBJ);
+    UniValue inputs_result(UniValue::VARR);
+    bool calc_fee = true;
+    bool all_final = true;
+    bool only_missing_sigs = false;
+    bool only_missing_final = false;
+    CAmount in_amt = 0;
+    for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
+        PSBTInput& input = psbtx.inputs[i];
+        UniValue input_univ(UniValue::VOBJ);
+        UniValue missing(UniValue::VOBJ);
+
+        // Check for a UTXO
+        CTxOut utxo;
+        if (GetUTXO(input, utxo, psbtx.tx->vin[i].prevout.n)) {
+            in_amt += utxo.nValue;
+            input_univ.pushKV("has_utxo", true);
+        } else {
+            input_univ.pushKV("has_utxo", false);
+            input_univ.pushKV("is_final", false);
+            input_univ.pushKV("next", "updater");
+            calc_fee = false;
+        }
+
+        // Check if it is final
+        if (input.final_script_sig.empty() && input.final_script_witness.IsNull()) {
+            input_univ.pushKV("is_final", false);
+            all_final = false;
+
+            // Figure out what is missing
+            std::vector<CKeyID> missing_pubkeys;
+            std::vector<CKeyID> missing_sigs;
+            uint160 missing_redeem_script;
+            uint256 missing_witness_script;
+            SignatureData sigdata;
+
+            bool complete = SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, 1); // &missing_pubkeys, &missing_sigs, &missing_redeem_script, &missing_witness_script);
+
+            // Things are missing
+            if (!complete) {
+                /*
+                if (!missing_pubkeys.empty()) {
+                    // Missing pubkeys
+                    UniValue missing_pubkeys_univ(UniValue::VARR);
+                    for (const CKeyID& pubkey : missing_pubkeys) {
+                        missing_pubkeys_univ.push_back(HexStr(pubkey));
+                    }
+                    missing.pushKV("pubkeys", missing_pubkeys_univ);
+                }
+                if (!missing_redeem_script.IsNull()) {
+                    // Missing redeemScript
+                    missing.pushKV("redeemscript", HexStr(missing_redeem_script));
+                }
+                if (!missing_witness_script.IsNull()) {
+                    // Missing witnessScript
+                    missing.pushKV("witnessscript", HexStr(missing_witness_script));
+                }
+                if (!missing_sigs.empty()) {
+                    // Missing sigs
+                    UniValue missing_sigs_univ(UniValue::VARR);
+                    for (const CKeyID& pubkey : missing_sigs) {
+                        missing_sigs_univ.push_back(HexStr(pubkey));
+                    }
+                    missing.pushKV("signatures", missing_sigs_univ);
+                } */
+                input_univ.pushKV("missing", true);
+
+                // If we are only missing signatures and nothing else, then next is signer
+                /*
+                if (missing_pubkeys.empty() && missing_redeem_script.IsNull() && missing_witness_script.IsNull() && !missing_sigs.empty()) {
+                    only_missing_sigs = true;
+                    input_univ.pushKV("next", "signer");
+                } else {
+                    input_univ.pushKV("next", "updater");
+                }
+                */
+            } else {
+                only_missing_final = true;
+                input_univ.pushKV("next", "finalizer");
+            }
+        } else {
+            input_univ.pushKV("is_final", true);
+        }
+        inputs_result.push_back(input_univ);
+    }
+    result.pushKV("inputs", inputs_result);
+
+    if (all_final) {
+        result.pushKV("next", "extractor");
+    }
+    if (calc_fee) {
+        // Get the output amount
+        CAmount out_amt = 0;
+        for (const CTxOut& out : psbtx.tx->vout) {
+            out_amt += out.nValue;
+        }
+
+        // Get the fee
+        CAmount fee = in_amt - out_amt;
+/*
+        // Estimate the size
+        CMutableTransaction mtx(*psbtx.tx);
+        CCoinsView view_dummy;
+        CCoinsViewCache view(&view_dummy);
+        bool success = true;
+
+        for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
+            PSBTInput& input = psbtx.inputs[i];
+            SignatureData sigdata;
+            if (SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, 1)) { // , nullptr, nullptr, nullptr, nullptr, true)) {
+                mtx.vin[i].scriptSig = input.final_script_sig;
+                mtx.vin[i].scriptWitness = input.final_script_witness;
+
+                Coin newcoin;
+                if (!input.GetUTXO(newcoin.out, psbtx.tx->vin[i].prevout.n)) {
+                    success = false;
+                    break;
+                }
+                newcoin.nHeight = 1;
+                view.AddCoin(psbtx.tx->vin[i].prevout, std::move(newcoin), true);
+            } else {
+                success = false;
+                break;
+            }
+        }
+
+        if (success) {
+            size_t size = GetVirtualTransactionSize(mtx, GetTransactionSigOpCost(mtx, view, STANDARD_SCRIPT_VERIFY_FLAGS));
+            result.pushKV("estimated_vsize", (int)size);
+            // Estimate fee rate
+            CFeeRate feerate(fee, size);
+            result.pushKV("estimated_feerate", feerate.ToString());
+        }
+        */
+        result.pushKV("fee", ValueFromAmount(fee));
+
+        if (only_missing_sigs) {
+            result.pushKV("next", "signer");
+        } else if (only_missing_final) {
+            result.pushKV("next", "finalizer");
+        } else if (all_final) {
+            result.pushKV("next", "extractor");
+        } else {
+            result.pushKV("next", "updater");
+        }
+    } else {
+        result.pushKV("next", "updater");
+    }
+    return result;
+}
+

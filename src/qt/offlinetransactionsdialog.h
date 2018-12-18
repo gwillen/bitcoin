@@ -59,6 +59,8 @@ private:
     QPlainTextEdit *(transactionText[4]);  // 1-indexed by tab to avoid confusion; 0 unused
     WalletModel *walletModel;
     ClientModel *clientModel;
+
+    std::string renderTransaction(PartiallySignedTransaction psbtx);
 };
 
 #endif // BITCOIN_QT_OFFLINETRANSACTIONSDIALOG_H

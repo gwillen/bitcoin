@@ -565,8 +565,8 @@ int GuiMain(int argc, char* argv[])
         app.createSplashScreen(networkStyle.data());
 
     int rv = EXIT_SUCCESS;
-    try
-    {
+    //try
+    //{
         app.createWindow(networkStyle.data());
         // Perform base initialization before spinning up initialization/shutdown thread
         // This is acceptable because this function only contains steps that are quick to execute,
@@ -584,13 +584,13 @@ int GuiMain(int argc, char* argv[])
             // A dialog with detailed error will have been shown by InitError()
             rv = EXIT_FAILURE;
         }
-    } catch (const std::exception& e) {
-        PrintExceptionContinue(&e, "Runaway exception");
+    //} catch (const std::exception& e) {
+        /* PrintExceptionContinue(&e, "Runaway exception");
         app.handleRunawayException(QString::fromStdString(node->getWarnings("gui")));
     } catch (...) {
         PrintExceptionContinue(nullptr, "Runaway exception");
         app.handleRunawayException(QString::fromStdString(node->getWarnings("gui")));
-    }
+    }*/
     return rv;
 }
 #endif // BITCOIN_QT_TEST

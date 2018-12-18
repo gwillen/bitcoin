@@ -378,6 +378,7 @@ bool WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, 
     return m_wallet->FillPSBT(psbtx, sighash_type, sign, bip32derivs);
 }
 
+// XXX warning: Can throw!
 std::string WalletModel::BroadcastTransaction(CTransactionRef tx, bool allowhighfees) {
     return m_wallet->BroadcastTransaction(tx, allowhighfees);
 }
