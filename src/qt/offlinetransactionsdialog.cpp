@@ -86,6 +86,9 @@ std::string serializeTransaction(PartiallySignedTransaction psbtx) {
     return ssTx.str();
 }
 
+//XXX
+UniValue AnalyzePSBT(PartiallySignedTransaction psbtx);
+
 OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletModel *walletModel, ClientModel *clientModel) :
     QDialog(parent),
     ui(new Ui::OfflineTransactionsDialog),
@@ -131,11 +134,28 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
 
     connect(ui->closeButton, SIGNAL(clicked()), this, SLOT(close()));
 
+    connect(ui->checkBoxAdvanced, SIGNAL(clicked(bool)), this, SLOT(advancedClicked(bool)));
+
+    // Initialize advanced buttons to be hidden
+    advancedClicked(false);
 }
 
 OfflineTransactionsDialog::~OfflineTransactionsDialog()
 {
     delete ui;
+}
+
+void OfflineTransactionsDialog::advancedClicked(bool checked) {
+    ui->copyToClipboardButton1->setVisible(checked);
+    ui->copyToClipboardButton2->setVisible(checked);
+    ui->pasteButton2->setVisible(checked);
+    ui->pasteButton3->setVisible(checked);
+
+    for (int tabId = 1; tabId <= 3; ++tabId) {
+        if (transactionData[tabId].tx) {  // XXX should be outer layer optional
+            transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
+        }
+    }
 }
 
 void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx) {
@@ -146,11 +166,7 @@ void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
     walletModel->FillPSBT(psbtx, SIGHASH_ALL, false, true);
     transactionData[1] = psbtx;
 
-    // Serialize the PSBT
-    CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << psbtx;
-    std::string result = EncodeBase64(ssTx.str());
-    ui->transactionData1->setPlainText(QString::fromStdString(result));
+    ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
 }
 
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state) {
@@ -223,29 +239,11 @@ void OfflineTransactionsDialog::saveToFile(int tabId) {
     out.close();
 }
 
-void OfflineTransactionsDialog::loadFromFile(int tabId) {
-    QString filename = GUIUtil::getOpenFileName(this,
-        tr("Load Transaction Data"), QString(),
-        tr("Partially Signed Transaction (*.psbt)"), nullptr);
-    if (filename.isEmpty()) {
-        return;
-    }
-
-    std::ifstream in(filename.toLocal8Bit().data(), std::ios::binary);
-    // https://stackoverflow.com/questions/116038/what-is-the-best-way-to-read-an-entire-file-into-a-stdstring-in-c
-    std::string data(std::istreambuf_iterator<char>{in}, {});
-    //bool invalid;
-    //std::string decoded = DecodeBase64(data, &invalid);
-    //if (!invalid) {
-    //    data = decoded;
-    //}
+void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data) {
     std::string error;
-    printf("asdf\n");
-    printf("length of data is %lu\n", data.length());
     PartiallySignedTransaction psbtx;
     if (!DecodeRawPSBT(psbtx, data, error)) {
         // XXX this is bad, signal "error"
-        printf("fail1\n");
         return;
     }
 
@@ -258,10 +256,31 @@ void OfflineTransactionsDialog::loadFromFile(int tabId) {
     if (tabId == 3) {
         started_tx_assembly = true;
         ui->loadFromFileButton3->setText("Load more ...");
+        ui->broadcastTransactionButton->setEnabled(AnalyzePSBT(transactionData[tabId])["all_sigs"].get_bool());
+    }
+
+    if (tabId == 2) {
+        // XXX, this also needs to happen if we clear the tab some other way?
+        did_sign_tx = false;
     }
 
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
     transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
+}
+
+void OfflineTransactionsDialog::loadFromFile(int tabId) {
+    QString filename = GUIUtil::getOpenFileName(this,
+        tr("Load Transaction Data"), QString(),
+        tr("Partially Signed Transaction (*.psbt)"), nullptr);
+    if (filename.isEmpty()) {
+        return;
+    }
+
+    std::ifstream in(filename.toLocal8Bit().data(), std::ios::binary);
+    // https://stackoverflow.com/questions/116038/what-is-the-best-way-to-read-an-entire-file-into-a-stdstring-in-c
+    std::string data(std::istreambuf_iterator<char>{in}, {});
+
+    loadTransaction(tabId, data);
 }
 
 void OfflineTransactionsDialog::clipboardCopy(int tabId) {
@@ -276,12 +295,8 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId) {
         // XXX this is bad
         return;
     }
-    std::string error;
-    if (!DecodeRawPSBT(transactionData[tabId], decoded, error)) {
-        // XXX this is bad, signal "error"
-        return;
-    }
-    transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
+
+    loadTransaction(tabId, decoded);
 }
 
 void OfflineTransactionsDialog::onlineStateChanged(bool online) {
@@ -295,10 +310,12 @@ void OfflineTransactionsDialog::signTransaction() {
         // maybe colorize or something?
     }
 
+    did_sign_tx = true;
     ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(transactionData[2])));
 }
 
 void OfflineTransactionsDialog::broadcastTransaction() {
+    // XXX these need to be option<> -- if we try to broadcast with no transaction we crash here. (and probably need more try{} blocks...)
     PartiallySignedTransaction psbtx = transactionData[3];
     // XXX hmm, the psbt code that's not wallet-based should NOT go through teh wallet model. But somehow we should be able to call out to it instead of open-code it.
     bool complete = true;
@@ -333,77 +350,86 @@ void OfflineTransactionsDialog::resetAssembledTransaction() {
     transactionData[3] = PartiallySignedTransaction();
     transactionText[3]->setPlainText("");
     ui->loadFromFileButton3->setText("Load from file ...");
+    ui->broadcastTransactionButton->setEnabled(false);
 }
 
-//XXX
-UniValue AnalyzePSBT(PartiallySignedTransaction psbtx);
-
 std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransaction psbtx) {
-    if (false) {
-        // render as Base64
-        return EncodeBase64(serializeTransaction(psbtx));
-    } else {
-        // read as human-readable
-        UniValue analysis = AnalyzePSBT(psbtx);
+    UniValue analysis = AnalyzePSBT(psbtx);
 
-        // XXX copied from sendcoinsdialog.cpp
-        QString questionString = tr("Transaction preview: ");
-        questionString.append(analysis.write().c_str());
-        questionString.append("<br /><span style='font-size:10pt;'>");
-        questionString.append(tr("Please, review your transaction."));
-        questionString.append("</span><br />%1");
+    // XXX copied from sendcoinsdialog.cpp
+    QString questionString = "";
 
-        double txFee = -1;
-        if (analysis.exists("fee") && analysis["fee"].isNum()) {
-            txFee = analysis["fee"].get_real();  /* this is a double WHY? XXX */
-        }
-
-        if(txFee > 0)
-        {
-            // append fee string if a fee is required
-            questionString.append("<hr /><b>");
-            questionString.append(tr("Transaction fee"));
-            questionString.append("</b>");
-
-            // append transaction size
-            //questionString.append(" (" + QString::number((double)currentTransaction.getTransactionSize() / 1000) + " kB): ");
-
-            // append transaction fee value
-            questionString.append("<span style='color:#aa0000; font-weight:bold;'>");
-            questionString.append(BitcoinUnits::formatHtmlWithUnit(BitcoinUnits::BTC, txFee * 100000000)); // XXX
-            //XXXquestionString.append(txFee);
-            questionString.append("</span><br />");
-
-            // append RBF message according to transaction's signalling
-            //questionString.append("<span style='font-size:10pt; font-weight:normal;'>");
-            //if (ui->optInRBF->isChecked()) {
-            //    questionString.append(tr("You can increase the fee later (signals Replace-By-Fee, BIP-125)."));
-            //} else {
-            //    questionString.append(tr("Not signalling Replace-By-Fee, BIP-125."));
-            //}
-            //questionString.append("</span>");
-        }
-/*
-        // add total amount in all subdivision units
-        questionString.append("<hr />");
-        CAmount totalAmount = currentTransaction.getTotalTransactionAmount() + txFee;
-        QStringList alternativeUnits;
-        for (const BitcoinUnits::Unit u : BitcoinUnits::availableUnits())
-        {
-            if(u != model->getOptionsModel()->getDisplayUnit())
-                alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
-        }
-        questionString.append(QString("<b>%1</b>: <b>%2</b>").arg(tr("Total Amount"))
-            .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount)));
-        questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
-            .arg(alternativeUnits.join(" " + tr("or") + " ")));
-
-        SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
-            questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
-        }
-        */
-        return questionString.toStdString();
+    if (did_sign_tx) {
+        // XXX except, we didn't check whether our signing actually did anything, or whether there was even anything we could sign.
+        questionString.append("SIGNED!\n\n");
     }
+
+    questionString.append("Transaction preview:\n");  // XXX removed tr() macro
+
+    double txFee = -1;
+    if (analysis.exists("fee") && analysis["fee"].isNum()) {
+        txFee = analysis["fee"].get_real();  /* this is a double WHY? XXX */
+    }
+
+    if (analysis.exists("all_sigs") && analysis["all_sigs"].get_bool()) {
+        questionString.append("Transaction is fully signed and ready for broadcast.\n");
+    } else {
+        questionString.append("Transaction still needs signature(s).\n");
+    }
+
+    if (analysis.exists("outputs")) {
+        for (const UniValue &output : analysis["outputs"].getValues()) {
+            questionString.append(QString("Sends %1 bitcoins to %2\n").arg(output["amt"].get_int64() / 100000000.).arg(QString::fromStdString(output["address"].get_str())));
+        }
+    }
+    if(txFee > 0)
+    {
+        // append fee string if a fee is required
+        questionString.append(tr("Transaction fee: "));
+
+        // append transaction size
+        //questionString.append(" (" + QString::number((double)currentTransaction.getTransactionSize() / 1000) + " kB): ");
+
+        // append transaction fee value
+        questionString.append(BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, txFee * 100000000)); // XXX
+        //XXXquestionString.append(txFee);
+
+        // append RBF message according to transaction's signalling
+        //questionString.append("<span style='font-size:10pt; font-weight:normal;'>");
+        //if (ui->optInRBF->isChecked()) {
+        //    questionString.append(tr("You can increase the fee later (signals Replace-By-Fee, BIP-125)."));
+        //} else {
+        //    questionString.append(tr("Not signalling Replace-By-Fee, BIP-125."));
+        //}
+        //questionString.append("</span>");
+    }
+/*
+    // add total amount in all subdivision units
+    questionString.append("<hr />");
+    CAmount totalAmount = currentTransaction.getTotalTransactionAmount() + txFee;
+    QStringList alternativeUnits;
+    for (const BitcoinUnits::Unit u : BitcoinUnits::availableUnits())
+    {
+        if(u != model->getOptionsModel()->getDisplayUnit())
+            alternativeUnits.append(BitcoinUnits::formatHtmlWithUnit(u, totalAmount));
+    }
+    questionString.append(QString("<b>%1</b>: <b>%2</b>").arg(tr("Total Amount"))
+        .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount)));
+    questionString.append(QString("<br /><span style='font-size:10pt; font-weight:normal;'>(=%1)</span>")
+        .arg(alternativeUnits.join(" " + tr("or") + " ")));
+
+    SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
+        questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
+    }
+    */
+    if (ui->checkBoxAdvanced->isChecked()) {
+        questionString.append("\n\n");
+        questionString.append(QString::fromStdString(EncodeBase64(serializeTransaction(psbtx))));
+        questionString.append("\n\n");
+        questionString.append("Debug info: ");
+        questionString.append(analysis.write().c_str());
+    }
+    return questionString.toStdString();
 }
 
 //XXX
@@ -425,10 +451,12 @@ UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
     // Go through each input and build status
     UniValue result(UniValue::VOBJ);
     UniValue inputs_result(UniValue::VARR);
+    UniValue outputs_result(UniValue::VARR);
     bool calc_fee = true;
     bool all_final = true;
     bool only_missing_sigs = false;
     bool only_missing_final = false;
+    bool all_sigs = true;
     CAmount in_amt = 0;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
         PSBTInput& input = psbtx.inputs[i];
@@ -463,6 +491,7 @@ UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
 
             // Things are missing
             if (!complete) {
+                all_sigs = false;
                 /*
                 if (!missing_pubkeys.empty()) {
                     // Missing pubkeys
@@ -513,11 +542,24 @@ UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
     if (all_final) {
         result.pushKV("next", "extractor");
     }
+
+    if (all_sigs) {
+        result.pushKV("all_sigs", true);
+    } else {
+        result.pushKV("all_sigs", false);
+    }
+
     if (calc_fee) {
         // Get the output amount
         CAmount out_amt = 0;
         for (const CTxOut& out : psbtx.tx->vout) {
+            UniValue output(UniValue::VOBJ);
             out_amt += out.nValue;
+            output.pushKV("amt", out.nValue);
+            UniValue tmp(UniValue::VOBJ);
+            ScriptPubKeyToUniv(out.scriptPubKey, tmp, false);
+            output.pushKV("address", tmp["addresses"][0]);  // XXX a bit hacky. I don't know what else this can hold
+            outputs_result.push_back(output);
         }
 
         // Get the fee
@@ -558,6 +600,13 @@ UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
         }
         */
         result.pushKV("fee", ValueFromAmount(fee));
+        result.pushKV("in_amt", ValueFromAmount(in_amt));
+        result.pushKV("out_amt", ValueFromAmount(out_amt));
+
+        // XXX ... is change not marked at all in PSBT? How can well tell which is change output?
+        // a WalletModelTransaction still has a list of recipients, but by the time it gets to us as a PSBT, that's gone.
+        // does Armory handle this?
+        // XXX for now, just a list of what-to-where.
 
         if (only_missing_sigs) {
             result.pushKV("next", "signer");
@@ -571,6 +620,7 @@ UniValue AnalyzePSBT(PartiallySignedTransaction psbtx) {
     } else {
         result.pushKV("next", "updater");
     }
+    result.pushKV("outputs", outputs_result);
     return result;
 }
 

@@ -45,6 +45,8 @@ public Q_SLOTS:
     void clipboardCopy(int tabId);
     void clipboardPaste(int tabId);
 
+    void advancedClicked(bool value);
+
     void nextState();
     void prevState();
 
@@ -53,17 +55,19 @@ public Q_SLOTS:
 
     void resetAssembledTransaction();
 
-    void onlineStateChanged(bool online);
+    void onlineStateChanged(bool online);  // XXX?
 
 private:
     Ui::OfflineTransactionsDialog *ui;
     PartiallySignedTransaction transactionData[4];  // 1-indexed by tab to avoid confusion; 0 unused
+    bool did_sign_tx = false;
     bool started_tx_assembly = false;
     QPlainTextEdit *(transactionText[4]);  // 1-indexed by tab to avoid confusion; 0 unused
     WalletModel *walletModel;
     ClientModel *clientModel;
 
     std::string renderTransaction(PartiallySignedTransaction psbtx);
+    void loadTransaction(int tabId, std::string data);
 };
 
 #endif // BITCOIN_QT_OFFLINETRANSACTIONSDIALOG_H
