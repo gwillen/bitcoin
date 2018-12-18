@@ -124,6 +124,8 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
     connect(ui->signTransactionButton, SIGNAL(clicked()), this, SLOT(signTransaction()));
     connect(ui->broadcastTransactionButton, SIGNAL(clicked()), this, SLOT(broadcastTransaction()));
 
+    connect(ui->resetButton3, SIGNAL(clicked()), this, SLOT(resetAssembledTransaction()));
+
     connect(ui->prevButton, SIGNAL(clicked()), this, SLOT(prevState()));
     connect(ui->nextButton, SIGNAL(clicked()), this, SLOT(nextState()));
 
@@ -240,11 +242,24 @@ void OfflineTransactionsDialog::loadFromFile(int tabId) {
     std::string error;
     printf("asdf\n");
     printf("length of data is %lu\n", data.length());
-    if (!DecodeRawPSBT(transactionData[tabId], data, error)) {
+    PartiallySignedTransaction psbtx;
+    if (!DecodeRawPSBT(psbtx, data, error)) {
         // XXX this is bad, signal "error"
         printf("fail1\n");
         return;
     }
+
+    if (tabId == 3 && started_tx_assembly) {
+        transactionData[tabId].Merge(psbtx);
+    } else {
+        transactionData[tabId] = psbtx;
+    }
+
+    if (tabId == 3) {
+        started_tx_assembly = true;
+        ui->loadFromFileButton3->setText("Load more ...");
+    }
+
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
     transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
 }
@@ -308,8 +323,16 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     } catch (UniValue &e) {
         message = "Transaction broadcast failed: "+ e.write();
     }
-    transactionData[3] = PartiallySignedTransaction(); // XXX remove stale data
+
+    resetAssembledTransaction();
     ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross
+}
+
+void OfflineTransactionsDialog::resetAssembledTransaction() {
+    started_tx_assembly = false;
+    transactionData[3] = PartiallySignedTransaction();
+    transactionText[3]->setPlainText("");
+    ui->loadFromFileButton3->setText("Load from file ...");
 }
 
 //XXX

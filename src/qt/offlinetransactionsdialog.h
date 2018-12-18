@@ -51,11 +51,14 @@ public Q_SLOTS:
     void signTransaction();
     void broadcastTransaction();
 
+    void resetAssembledTransaction();
+
     void onlineStateChanged(bool online);
 
 private:
     Ui::OfflineTransactionsDialog *ui;
     PartiallySignedTransaction transactionData[4];  // 1-indexed by tab to avoid confusion; 0 unused
+    bool started_tx_assembly = false;
     QPlainTextEdit *(transactionText[4]);  // 1-indexed by tab to avoid confusion; 0 unused
     WalletModel *walletModel;
     ClientModel *clientModel;
