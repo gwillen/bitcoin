@@ -220,17 +220,20 @@ void OfflineTransactionsDialog::loadFromFile(int tabId) {
         return;
     }
 
-    std::ifstream in(filename.toLocal8Bit().data());
-    std::string data;
-    in >> data;
-    bool invalid;
-    std::string decoded = DecodeBase64(data, &invalid);
-    if (!invalid) {
-        data = decoded;
-    }
+    std::ifstream in(filename.toLocal8Bit().data(), std::ios::binary);
+    // https://stackoverflow.com/questions/116038/what-is-the-best-way-to-read-an-entire-file-into-a-stdstring-in-c
+    std::string data(std::istreambuf_iterator<char>{in}, {});
+    //bool invalid;
+    //std::string decoded = DecodeBase64(data, &invalid);
+    //if (!invalid) {
+    //    data = decoded;
+    //}
     std::string error;
+    printf("asdf\n");
+    printf("length of data is %lu\n", data.length());
     if (!DecodeRawPSBT(transactionData[tabId], data, error)) {
         // XXX this is bad, signal "error"
+        printf("fail1\n");
         return;
     }
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
