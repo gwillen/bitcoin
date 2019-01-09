@@ -52,7 +52,7 @@
            <item>
             <widget class="QLabel" name="instructionsLabel1">
              <property name="text">
-              <string>(instructions)</string>
+              <string>On your ONLINE computer: Save your unsigned transaction to a file and transport it to your offline computer, where you will select &quot;Offline-&gt;Sign offline transaction...&quot; in order to sign it.</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -91,6 +91,9 @@
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
+                 </property>
+                 <property name="placeholderText">
+                  <string>To create an unsigned transaction, open the Send tab on your online computer, check the 'Create unsigned transaction' box, fill in your transaction details, and click the Create Unsigned button.</string>
                  </property>
                 </widget>
                </item>
@@ -202,7 +205,10 @@
            <item>
             <widget class="QLabel" name="instructionsLabel2">
              <property name="text">
-              <string>(instructions)</string>
+              <string>On your OFFLINE computer: Load an unsigned transaction from a file, verify it to your satisfaction, then click SIGN. Save it to a new file, and bring it back to an online computer, where you will select &quot;Offline-&gt;Assemble and broadcast offline transaction...&quot; to broadcast it to the network.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -238,6 +244,9 @@
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
+                 </property>
+                 <property name="placeholderText">
+                  <string>Click &quot;Load from file ...&quot; and select a PSBT file exported from your online computer, in order to sign it.</string>
                  </property>
                 </widget>
                </item>
@@ -354,7 +363,10 @@
            <item>
             <widget class="QLabel" name="instructionsLabel3">
              <property name="text">
-              <string>(instructions)</string>
+              <string>On your ONLINE computer: Load a transaction, which you signed on your offline machine(s) -- loading from multiple files in sequence if necessary -- then click BROADCAST.</string>
+             </property>
+             <property name="wordWrap">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -390,6 +402,9 @@
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
+                 </property>
+                 <property name="placeholderText">
+                  <string>Click &quot;Load from file ...&quot; and select a signed PSBT file for broadcast. If you have multiple signatures that need to be combined, you can load each file in turn.</string>
                  </property>
                 </widget>
                </item>
@@ -488,7 +503,7 @@
      <item>
       <widget class="QLabel" name="labelOnlineOfflineMode">
        <property name="text">
-        <string>Online / offline mode label + instructions</string>
+        <string>                      </string>
        </property>
       </widget>
      </item>
@@ -505,7 +520,7 @@
        </property>
       </spacer>
      </item>
-     <item alignment="Qt::AlignRight">
+     <item>
       <widget class="QCheckBox" name="checkBoxOnlineOffline">
        <property name="text">
         <string>Fakey online/offline switch</string>

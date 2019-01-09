@@ -111,6 +111,8 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
 
     //XXX
     connect(ui->checkBoxOnlineOffline, SIGNAL(clicked(bool)), this, SLOT(onlineStateChanged(bool)));
+    //XXX
+    ui->checkBoxOnlineOffline->setVisible(false);
 
     connect(ui->saveToFileButton1, &QPushButton::clicked, [this](){ saveToFile(1); });
     connect(ui->saveToFileButton2, &QPushButton::clicked, [this](){ saveToFile(2); });
@@ -169,6 +171,7 @@ void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
     ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
 }
 
+// XXX prev/next buttons break when you change tabs using the headers
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state) {
     ui->nextButton->setEnabled(true);
     ui->prevButton->setEnabled(true);
@@ -300,8 +303,8 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId) {
 }
 
 void OfflineTransactionsDialog::onlineStateChanged(bool online) {
-    ui->stackedWidgetStep2->setCurrentIndex(online); // only sign if we're offline
-    ui->stackedWidgetStep3->setCurrentIndex(online); // only broadcast if we're online
+    ui->stackedWidgetStep2->setCurrentIndex(1); //XXX // only sign if we're offline
+    ui->stackedWidgetStep3->setCurrentIndex(0); //XXX only broadcast if we're online
 }
 
 void OfflineTransactionsDialog::signTransaction() {
