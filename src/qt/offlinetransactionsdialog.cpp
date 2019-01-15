@@ -19,19 +19,6 @@
 #include <iostream>
 
 /* XXX
-std::string wrapString(const std::string input, int cols) {
-    std::string out;
-    size_t pos = 0;
-    while (pos < input.size()) {
-        out.append(input.substr(pos, cols));
-        out.append("\n");
-        pos += cols;
-    }
-    return out;
-}
-*/
-
-/* XXX
 The flow in this dialog is kind of fucked-up. Documenting it here for personal
 reference before I document it more reasonably somewhere else:
 - First you should use the send dialog in unsigned mode.
