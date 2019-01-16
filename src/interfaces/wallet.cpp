@@ -15,7 +15,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
-#include <rpc/rawtransaction.h> // XXX noooooo gross don't
+#include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <scheduler.h>
 #include <script/ismine.h>
@@ -29,7 +29,8 @@
 #include <validation.h>
 #include <wallet/feebumper.h>
 #include <wallet/fees.h>
-#include <wallet/rpcwallet.h> // XXX noooooo gross don't (but upstream did :-( )
+#include <wallet/rpcwallet.h>
+#include <wallet/psbtwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
 

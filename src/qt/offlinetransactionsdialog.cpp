@@ -238,7 +238,9 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data) {
     }
 
     if (tabId == 3 && started_tx_assembly) {
-        transactionData[tabId].Merge(psbtx);
+        if (!transactionData[tabId].Merge(psbtx)) {
+            // XXX this is bad, it wasn't the same transaction, signal error
+        }
     } else {
         transactionData[tabId] = psbtx;
     }

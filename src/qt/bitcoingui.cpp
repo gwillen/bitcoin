@@ -461,7 +461,6 @@ void BitcoinGUI::createMenuBar()
     }
     settings->addAction(optionsAction);
 
-<<<<<<< HEAD
     QMenu* window_menu = appMenuBar->addMenu(tr("&Window"));
 
     QAction* minimize_action = window_menu->addAction(tr("Minimize"));
