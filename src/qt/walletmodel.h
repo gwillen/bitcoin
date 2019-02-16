@@ -186,8 +186,8 @@ public:
     bool setWalletLocked(bool locked, const SecureString &passPhrase=SecureString());
     bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
 
-    bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs);
-    std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees = false);
+    bool FillPSBT(PartiallySignedTransaction& psbtx, TransactionError& error, bool& complete, int sighash_type = 1 /* SIGHASH_ALL */, bool sign = true, bool bip32derivs = false);
+    bool BroadcastTransaction(CTransactionRef tx, uint256& txid, TransactionError& error, std::string& err_string, bool allowhighfees = false);
 
     // RAI object for unlocking wallet, returned by requestUnlock()
     class UnlockContext

@@ -152,11 +152,17 @@ public:
     {
         return m_wallet->ChangeWalletPassphrase(old_wallet_passphrase, new_wallet_passphrase);
     }
-    bool FillPSBT(PartiallySignedTransaction& psbtx, int sighash_type, bool sign, bool bip32derivs) override {
-        return ::FillPSBT(&m_wallet, psbtx, sighash_type, sign, bip32derivs);
+
+    bool FillPSBT(PartiallySignedTransaction& psbtx,
+                  TransactionError& error,
+                  bool& complete,
+                  int sighash_type,
+                  bool sign,
+                  bool bip32derivs) override {
+        return ::FillPSBT(&m_wallet, psbtx, error, complete, sighash_type, sign, bip32derivs);
     }
-    std::string BroadcastTransaction(CTransactionRef tx, bool allowhighfees) override {
-        return ::BroadcastTransaction(tx, allowhighfees);
+    bool BroadcastTransaction(CTransactionRef tx, uint256& txid, TransactionError& error, std::string& err_string, bool allowhighfees) override {
+        return ::BroadcastTransaction(tx, txid, error, err_string, allowhighfees);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }

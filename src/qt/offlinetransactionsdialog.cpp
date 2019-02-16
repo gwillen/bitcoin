@@ -150,11 +150,20 @@ void OfflineTransactionsDialog::advancedClicked(bool checked) {
 void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx) {
     setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
 
-    PartiallySignedTransaction psbtx(*tx);
+    PartiallySignedTransaction psbtx((CMutableTransaction)(*tx));
+    TransactionError err;
+    bool complete;
     // XXX hm, this is a gross place to do all this work though.
-    walletModel->FillPSBT(psbtx, SIGHASH_ALL, false, true);
-    transactionData[1] = psbtx;
+    bool result = walletModel->FillPSBT(psbtx, err, complete, SIGHASH_ALL, false, true);
+    if (!result) {
+        // XXX do something with err
+        return;
+    }
+    if (!complete) {
+        // XXX warn it's not complete?
+    }
 
+    transactionData[1] = psbtx;
     ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
 }
 
@@ -297,7 +306,14 @@ void OfflineTransactionsDialog::onlineStateChanged(bool online) {
 }
 
 void OfflineTransactionsDialog::signTransaction() {
-    if (!walletModel->FillPSBT(transactionData[2], SIGHASH_ALL, true, true)) {
+    bool complete;
+    TransactionError err;
+    if (!walletModel->FillPSBT(transactionData[2], err, complete, SIGHASH_ALL, true, true)) {
+        // XXX this is a failure, do something with err
+        return;
+    }
+
+    if (!complete) {
         //XXX oops, it worked but warn that it's still incomplete and can't be broadcast yet
         // maybe colorize or something?
     }
@@ -327,10 +343,14 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     }
     CTransactionRef tx = MakeTransactionRef(mtx);
     std::string message;
-    try {
-        message = "Transaction broadcast successfully! Transaction ID: " + walletModel->BroadcastTransaction(tx);
-    } catch (UniValue &e) {
-        message = "Transaction broadcast failed: "+ e.write();
+    uint256 txid;
+    TransactionError error;
+    std::string err_string;
+    bool result = walletModel->BroadcastTransaction(tx, txid, error, err_string);
+    if (result) {
+        message = "Transaction broadcast successfully! Transaction ID: " + txid.GetHex();
+    } else {
+        message = "Transaction broadcast failed: "+ err_string;
     }
 
     resetAssembledTransaction();
