@@ -153,16 +153,16 @@ public:
         return m_wallet->ChangeWalletPassphrase(old_wallet_passphrase, new_wallet_passphrase);
     }
 
-    bool FillPSBT(PartiallySignedTransaction& psbtx,
-                  TransactionError& error,
+    TransactionError FillPSBT(PartiallySignedTransaction& psbtx,
                   bool& complete,
                   int sighash_type,
                   bool sign,
                   bool bip32derivs) override {
-        return ::FillPSBT(&m_wallet, psbtx, error, complete, sighash_type, sign, bip32derivs);
+        // XXX we are throwing away the protection of shared_ptr here, is that what we want?
+        return ::FillPSBT(m_wallet.get(), psbtx, complete, sighash_type, sign, bip32derivs);
     }
-    bool BroadcastTransaction(CTransactionRef tx, uint256& txid, TransactionError& error, std::string& err_string, bool allowhighfees) override {
-        return ::BroadcastTransaction(tx, txid, error, err_string, allowhighfees);
+    TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees) override {
+        return ::BroadcastTransaction(tx, txid, err_string, allowhighfees);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }

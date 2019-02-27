@@ -373,13 +373,13 @@ bool WalletModel::changePassphrase(const SecureString &oldPass, const SecureStri
     return m_wallet->changeWalletPassphrase(oldPass, newPass);
 }
 
-bool WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, TransactionError& error, bool& complete, int sighash_type, bool sign, bool bip32derivs)
+TransactionError WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, bool& complete, int sighash_type, bool sign, bool bip32derivs)
 {
-    return m_wallet->FillPSBT(psbtx, error, complete, sighash_type, sign, bip32derivs);
+    return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs);
 }
 
-bool WalletModel::BroadcastTransaction(CTransactionRef tx, uint256& txid, TransactionError& error, std::string& err_string, bool allowhighfees) {
-    return m_wallet->BroadcastTransaction(tx, txid, error, err_string, allowhighfees);
+TransactionError WalletModel::BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees) {
+    return m_wallet->BroadcastTransaction(tx, txid, err_string, allowhighfees);
 }
 
 // Handlers for core signals

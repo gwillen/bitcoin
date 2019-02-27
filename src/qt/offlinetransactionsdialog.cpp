@@ -151,11 +151,10 @@ void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
     setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
 
     PartiallySignedTransaction psbtx((CMutableTransaction)(*tx));
-    TransactionError err;
     bool complete;
     // XXX hm, this is a gross place to do all this work though.
-    bool result = walletModel->FillPSBT(psbtx, err, complete, SIGHASH_ALL, false, true);
-    if (!result) {
+    TransactionError err = walletModel->FillPSBT(psbtx, complete, SIGHASH_ALL, false, true);
+    if (err != TransactionError::OK) {
         // XXX do something with err
         return;
     }
@@ -307,8 +306,8 @@ void OfflineTransactionsDialog::onlineStateChanged(bool online) {
 
 void OfflineTransactionsDialog::signTransaction() {
     bool complete;
-    TransactionError err;
-    if (!walletModel->FillPSBT(transactionData[2], err, complete, SIGHASH_ALL, true, true)) {
+    TransactionError err = walletModel->FillPSBT(transactionData[2], complete, SIGHASH_ALL, true, true);
+    if (err != TransactionError::OK) {
         // XXX this is a failure, do something with err
         return;
     }
@@ -344,10 +343,9 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     CTransactionRef tx = MakeTransactionRef(mtx);
     std::string message;
     uint256 txid;
-    TransactionError error;
     std::string err_string;
-    bool result = walletModel->BroadcastTransaction(tx, txid, error, err_string);
-    if (result) {
+    TransactionError error = walletModel->BroadcastTransaction(tx, txid, err_string);
+    if (error == TransactionError::OK) {
         message = "Transaction broadcast successfully! Transaction ID: " + txid.GetHex();
     } else {
         message = "Transaction broadcast failed: "+ err_string;

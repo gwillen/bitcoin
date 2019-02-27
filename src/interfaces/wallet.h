@@ -69,15 +69,14 @@ public:
         const SecureString& new_wallet_passphrase) = 0;
 
     //! Fill in partially signed transaction using wallet info.
-    virtual bool FillPSBT(PartiallySignedTransaction& psbtx,
-                          TransactionError& error,
+    virtual TransactionError FillPSBT(PartiallySignedTransaction& psbtx,
                           bool& complete,
                           int sighash_type = 1 /* SIGHASH_ALL */,
                           bool sign = true,
                           bool bip32derivs = false) = 0;
 
     //! Broadcast a CTransactionRef to the network. XXX: doesn't really belong here, belongs in node / clientmodel
-    virtual bool BroadcastTransaction(CTransactionRef tx, uint256& txid, TransactionError& error, std::string& err_string, bool allowhighfees = false) = 0;
+    virtual TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees = false) = 0;
 
     //! Abort a rescan.
     virtual void abortRescan() = 0;
