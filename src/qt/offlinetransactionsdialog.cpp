@@ -372,6 +372,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
     if (did_sign_tx) {
         // XXX except, we didn't check whether our signing actually did anything, or whether there was even anything we could sign.
         questionString.append("SIGNED!\n\n");
+        // XXX also, this is bad because it puts SIGNED in the broadcast box when we paste a transaction after signing -- in general 'signed' is not a state that sticks around, or is cross-tab -- we should have this as something like a butterbar on tab 2, instead.
     }
 
     questionString.append("Transaction preview:\n");  // XXX removed tr() macro
