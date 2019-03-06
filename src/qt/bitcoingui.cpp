@@ -623,7 +623,7 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel)
 
         // enable/disable the offline transactions menu based on the setting in the model -- XXX should this depend on the wallet / walletframe? in principle you can broadcast without a wallet but you can't send or sign. And broadcast won't work without a wallet the way I did it.
         setOfflineMenuVisible(optionsModel->getOfflineTransactionFeatures());
-        connect(optionsModel, SIGNAL(offlineTransactionFeaturesChanged(bool)), this, SLOT(setOfflineMenuVisible(bool)));
+        connect(optionsModel, &OptionsModel::offlineTransactionFeaturesChanged, this, &BitcoinGUI::setOfflineMenuVisible);
     } else {
         // Disable possibility to show main window via action
         toggleHideAction->setEnabled(false);

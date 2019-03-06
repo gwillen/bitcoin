@@ -136,8 +136,8 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->labelWatchonlyText->setVisible(false);
     ui->labelWatchonlyBalance->setVisible(false);
     ui->labelWatchonlySeparator->setVisible(false);
-    connect(ui->checkBoxCreateUnsignedTransaction, SIGNAL(stateChanged(int)), this, SLOT(createUnsignedTransactionChecked(int)));
-    connect(ui->checkBoxIncludeWatchonlyCoins, SIGNAL(stateChanged(int)), this, SLOT(includeWatchonlyCoinsChecked(int)));
+    connect(ui->checkBoxCreateUnsignedTransaction, &QCheckBox::stateChanged, this, &SendCoinsDialog::createUnsignedTransactionChecked);
+    connect(ui->checkBoxIncludeWatchonlyCoins, &QCheckBox::stateChanged, this, &SendCoinsDialog::includeWatchonlyCoinsChecked);
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -177,7 +177,7 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         coinControlUpdateLabels();
 
         // offline transactions
-        connect(_model->getOptionsModel(), SIGNAL(offlineTransactionFeaturesChanged(bool)), this, SLOT(offlineTransactionFeatureChanged(bool)));
+        connect(_model->getOptionsModel(), &OptionsModel::offlineTransactionFeaturesChanged, this, &SendCoinsDialog::offlineTransactionFeatureChanged);
         ui->widgetOfflineTransactions->setVisible(_model->getOptionsModel()->getOfflineTransactionFeatures());
 
         // fee section
