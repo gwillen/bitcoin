@@ -52,7 +52,9 @@
            <item>
             <widget class="QLabel" name="instructionsLabel1">
              <property name="text">
-              <string>On your ONLINE computer: Save your unsigned transaction to a file and transport it to your offline computer, where you will select &quot;Offline-&gt;Sign offline transaction...&quot; in order to sign it.</string>
+              <string>On your ONLINE computer: Click 'Save to file...' to save your unsigned transaction to a file and transport it to your offline computer.
+
+NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transaction...&quot; in order to sign it.</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -93,7 +95,7 @@
                   <bool>true</bool>
                  </property>
                  <property name="placeholderText">
-                  <string>To create an unsigned transaction, open the Send tab on your online computer, check the 'Create unsigned transaction' box, fill in your transaction details, and click the Create Unsigned button.</string>
+                  <string>To create an unsigned transaction, open the Send tab on your online computer, check the 'Create unsigned transaction' box, fill in your transaction details, and click the Create Unsigned button. You can't create an unsigned transaction from here.</string>
                  </property>
                 </widget>
                </item>
@@ -205,7 +207,9 @@
            <item>
             <widget class="QLabel" name="instructionsLabel2">
              <property name="text">
-              <string>On your OFFLINE computer: Load an unsigned transaction from a file, verify it to your satisfaction, then click SIGN. Save it to a new file, and bring it back to an online computer, where you will select &quot;Offline-&gt;Assemble and broadcast offline transaction...&quot; to broadcast it to the network.</string>
+              <string>On your OFFLINE computer: Click 'Load from file...' to load an unsigned transaction from a file; verify it to your satisfaction, then click SIGN TRANSACTION. Click 'Save to file ...' to save it to a new file and bring it back to your online computer.
+
+ NEXT, on your ONLINE COMPUTER, select &quot;Offline-&gt;Assemble and broadcast offline transaction...&quot; to broadcast it to the network.</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -363,7 +367,7 @@
            <item>
             <widget class="QLabel" name="instructionsLabel3">
              <property name="text">
-              <string>On your ONLINE computer: Load a transaction, which you signed on your offline machine(s) -- loading from multiple files in sequence if necessary -- then click BROADCAST.</string>
+              <string>On your ONLINE computer: Click 'Load from file...' to load a transaction, which you signed on your offline machine(s). If necessary, load multiple files in sequence until you have loaded all parts of the transaction. Then click BROADCAST.</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -503,7 +507,20 @@
      <item>
       <widget class="QLabel" name="labelOnlineOfflineMode">
        <property name="text">
-        <string>                      </string>
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="closeButton">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string>Close</string>
        </property>
       </widget>
      </item>
@@ -521,75 +538,12 @@
       </spacer>
      </item>
      <item>
-      <widget class="QCheckBox" name="checkBoxOnlineOffline">
-       <property name="text">
-        <string>Fakey online/offline switch</string>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QCheckBox" name="checkBoxAdvanced">
        <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="text">
         <string>Advanced</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_2">
-     <item alignment="Qt::AlignLeft">
-      <widget class="QPushButton" name="closeButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Close</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QPushButton" name="prevButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Prev</string>
-       </property>
-      </widget>
-     </item>
-     <item alignment="Qt::AlignRight">
-      <widget class="QPushButton" name="nextButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Next</string>
-       </property>
-       <property name="default">
-        <bool>true</bool>
        </property>
       </widget>
      </item>

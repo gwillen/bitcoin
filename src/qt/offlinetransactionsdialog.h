@@ -55,8 +55,6 @@ public Q_SLOTS:
 
     void resetAssembledTransaction();
 
-    void onlineStateChanged(bool online);  // XXX?
-
 private:
     Ui::OfflineTransactionsDialog *ui;
     PartiallySignedTransaction transactionData[4];  // 1-indexed by tab to avoid confusion; 0 unused

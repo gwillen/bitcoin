@@ -82,8 +82,8 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
     ui->setupUi(this);
     setWindowTitle("Review offline transaction");
 
-    bool offline = false;
-    onlineStateChanged(offline); // XXX base this on reality instead
+    ui->stackedWidgetStep2->setCurrentIndex(1); //XXX // only sign if we're offline
+    ui->stackedWidgetStep3->setCurrentIndex(0); //XXX only broadcast if we're online
 
     transactionText[1] = ui->transactionData1;
     transactionText[2] = ui->transactionData2;
@@ -92,11 +92,6 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
     for (int i = 1; i <= 3; ++i) {
         transactionText[i]->setWordWrapMode(QTextOption::WrapAnywhere);
     }
-
-    //XXX
-    connect(ui->checkBoxOnlineOffline, &QCheckBox::clicked, this, &OfflineTransactionsDialog::onlineStateChanged);
-    //XXX
-    ui->checkBoxOnlineOffline->setVisible(false);
 
     connect(ui->saveToFileButton1, &QPushButton::clicked, [this](){ saveToFile(1); });
     connect(ui->saveToFileButton2, &QPushButton::clicked, [this](){ saveToFile(2); });
@@ -114,12 +109,7 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
     connect(ui->broadcastTransactionButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::broadcastTransaction);
 
     connect(ui->resetButton3, &QPushButton::clicked, this, &OfflineTransactionsDialog::resetAssembledTransaction);
-
-    connect(ui->prevButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::prevState);
-    connect(ui->nextButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::nextState);
-
     connect(ui->closeButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::close);
-
     connect(ui->checkBoxAdvanced, &QCheckBox::clicked, this, &OfflineTransactionsDialog::advancedClicked);
 
     // Initialize advanced buttons to be hidden
@@ -163,24 +153,8 @@ void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
     ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
 }
 
-// XXX prev/next buttons break when you change tabs using the headers
+//XXX is this still necessary with prev/next buttons gone
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state) {
-    ui->nextButton->setEnabled(true);
-    ui->prevButton->setEnabled(true);
-
-    switch (state) {
-    case OfflineTransactionsDialog::GetUnsignedTransaction:
-        ui->prevButton->setEnabled(false);
-        break;
-    case OfflineTransactionsDialog::BroadcastTransaction:
-        ui->nextButton->setEnabled(false);
-        break;
-    }
-
-    // This shouldn't really be necessary, but seems to be? But possibly only on my machine? XXX :-( See https://github.com/bitcoin/bitcoin/issues/14469 .
-    ui->nextButton->repaint();
-    ui->prevButton->repaint();
-
     ui->tabWidget->setCurrentIndex(state);
 }
 
@@ -296,11 +270,6 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId) {
     }
 
     loadTransaction(tabId, decoded);
-}
-
-void OfflineTransactionsDialog::onlineStateChanged(bool online) {
-    ui->stackedWidgetStep2->setCurrentIndex(1); //XXX // only sign if we're offline
-    ui->stackedWidgetStep3->setCurrentIndex(0); //XXX only broadcast if we're online
 }
 
 void OfflineTransactionsDialog::signTransaction() {
