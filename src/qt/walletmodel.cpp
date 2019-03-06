@@ -378,10 +378,6 @@ TransactionError WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, bool& 
     return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs);
 }
 
-TransactionError WalletModel::BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees) {
-    return m_wallet->BroadcastTransaction(tx, txid, err_string, allowhighfees);
-}
-
 // Handlers for core signals
 static void NotifyUnload(WalletModel* walletModel)
 {

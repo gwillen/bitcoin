@@ -257,6 +257,10 @@ public:
     {
         return MakeWallet(LoadWallet(*m_interfaces.chain, name, error, warning));
     }
+    TransactionError broadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees) override
+    {
+        return BroadcastTransaction(tx, txid, err_string, allowhighfees);
+    }
     std::unique_ptr<Handler> handleInitMessage(InitMessageFn fn) override
     {
         return MakeHandler(::uiInterface.InitMessage_connect(fn));

@@ -5,6 +5,7 @@
 #include <qt/offlinetransactionsdialog.h>
 
 #include <core_io.h>
+#include <interfaces/node.h>
 #include <key_io.h>
 #include <qt/bitcoinunits.h>
 #include <qt/forms/ui_offlinetransactionsdialog.h>
@@ -342,7 +343,7 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     std::string message;
     uint256 txid;
     std::string err_string;
-    TransactionError error = walletModel->BroadcastTransaction(tx, txid, err_string);
+    TransactionError error = clientModel->node().broadcastTransaction(tx, txid, err_string);
     if (error == TransactionError::OK) {
         message = "Transaction broadcast successfully! Transaction ID: " + txid.GetHex();
     } else {

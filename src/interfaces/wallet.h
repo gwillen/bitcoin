@@ -75,9 +75,6 @@ public:
                           bool sign = true,
                           bool bip32derivs = false) = 0;
 
-    //! Broadcast a CTransactionRef to the network. XXX: doesn't really belong here, belongs in node / clientmodel
-    virtual TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees = false) = 0;
-
     //! Abort a rescan.
     virtual void abortRescan() = 0;
 

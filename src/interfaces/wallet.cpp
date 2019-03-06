@@ -161,9 +161,6 @@ public:
         // XXX we are throwing away the protection of shared_ptr here, is that what we want?
         return ::FillPSBT(m_wallet.get(), psbtx, complete, sighash_type, sign, bip32derivs);
     }
-    TransactionError BroadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees) override {
-        return ::BroadcastTransaction(tx, txid, err_string, allowhighfees);
-    }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }
     std::string getWalletName() override { return m_wallet->GetName(); }
