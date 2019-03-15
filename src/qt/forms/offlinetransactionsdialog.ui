@@ -388,6 +388,13 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
             </spacer>
            </item>
            <item>
+            <widget class="QLabel" name="infoLabel">
+             <property name="text">
+              <string>TextLabel</string>
+             </property>
+            </widget>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="horizontalLayout_6">
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_18">

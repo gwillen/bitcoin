@@ -11,6 +11,7 @@
 #include <qt/forms/ui_offlinetransactionsdialog.h>
 #include <qt/guiutil.h>
 #include <qt/transactiontablemodel.h>
+#include <ui_interface.h>
 #include <util/strencodings.h>
 
 #include <QModelIndex>
@@ -287,6 +288,12 @@ void OfflineTransactionsDialog::signTransaction() {
 
     did_sign_tx = true;
     ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(transactionData[2])));
+
+    uiInterface.ThreadSafeMessageBox(
+        _("Signed transaction sucessfully."),
+        "", CClientUIInterface::MSG_ERROR);
+
+    // XXX TK put up a 'signed' modal here
 }
 
 void OfflineTransactionsDialog::broadcastTransaction() {
