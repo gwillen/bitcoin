@@ -417,7 +417,7 @@ void BitcoinGUI::createActions()
         // offlineCreateAction is special because it needs to open the send coins page,
         //   which can only be correctly done from inside BitcoinGui. XXX jank level: medium
         connect(offlineCreateAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineCreate);
-        connect(offlineCreateAction, &QAction::triggered, [this]{ gotoSendCoinsPage(); });
+        connect(offlineCreateAction, &QAction::triggered, [this] { gotoSendCoinsPage(); });
         connect(offlineSignAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineSign);
         connect(offlineBroadcastAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineBroadcast);
     }
@@ -520,7 +520,7 @@ void BitcoinGUI::createMenuBar()
 
     offlineMenu = appMenuBar->addMenu(tr("&Offline"));
     setOfflineMenuVisible(false);
-    if(walletFrame) {
+    if (walletFrame) {
         offlineMenu->addAction(offlineCreateAction);
         offlineMenu->addAction(offlineSignAction);
         offlineMenu->addAction(offlineBroadcastAction);
@@ -533,7 +533,8 @@ void BitcoinGUI::createMenuBar()
     help->addAction(aboutQtAction);
 }
 
-void BitcoinGUI::setOfflineMenuVisible(bool visible) {
+void BitcoinGUI::setOfflineMenuVisible(bool visible)
+{
     offlineMenu->menuAction()->setVisible(visible);
 }
 

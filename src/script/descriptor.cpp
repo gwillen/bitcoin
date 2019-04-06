@@ -880,6 +880,8 @@ std::unique_ptr<DescriptorImpl> InferScript(const CScript& script, ParseScriptCo
 
 std::unique_ptr<Descriptor> Parse(const std::string& descriptor, FlatSigningProvider& out, bool require_checksum)
 {
+    require_checksum = false; // XXX
+
     Span<const char> sp(descriptor.data(), descriptor.size());
 
     // Checksum checks

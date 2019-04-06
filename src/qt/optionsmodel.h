@@ -34,27 +34,27 @@ public:
     explicit OptionsModel(interfaces::Node& node, QObject *parent = nullptr, bool resetSettings = false);
 
     enum OptionID {
-        StartAtStartup,         // bool
-        HideTrayIcon,           // bool
-        MinimizeToTray,         // bool
-        MapPortUPnP,            // bool
-        MinimizeOnClose,        // bool
-        ProxyUse,               // bool
-        ProxyIP,                // QString
-        ProxyPort,              // int
-        ProxyUseTor,            // bool
-        ProxyIPTor,             // QString
-        ProxyPortTor,           // int
-        DisplayUnit,            // BitcoinUnits::Unit
-        ThirdPartyTxUrls,       // QString
-        Language,               // QString
-        CoinControlFeatures,    // bool
-        ThreadsScriptVerif,     // int
-        Prune,                  // bool
-        PruneSize,              // int
-        DatabaseCache,          // int
-        SpendZeroConfChange,    // bool
-        Listen,                 // bool
+        StartAtStartup,             // bool
+        HideTrayIcon,               // bool
+        MinimizeToTray,             // bool
+        MapPortUPnP,                // bool
+        MinimizeOnClose,            // bool
+        ProxyUse,                   // bool
+        ProxyIP,                    // QString
+        ProxyPort,                  // int
+        ProxyUseTor,                // bool
+        ProxyIPTor,                 // QString
+        ProxyPortTor,               // int
+        DisplayUnit,                // BitcoinUnits::Unit
+        ThirdPartyTxUrls,           // QString
+        Language,                   // QString
+        CoinControlFeatures,        // bool
+        ThreadsScriptVerif,         // int
+        Prune,                      // bool
+        PruneSize,                  // int
+        DatabaseCache,              // int
+        SpendZeroConfChange,        // bool
+        Listen,                     // bool
         OfflineTransactionFeatures, // bool
         OptionIDRowCount,
     };

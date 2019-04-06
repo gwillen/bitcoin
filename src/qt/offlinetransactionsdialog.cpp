@@ -14,8 +14,8 @@
 #include <ui_interface.h>
 #include <util/strencodings.h>
 
-#include <QModelIndex>
 #include <QClipboard>
+#include <QModelIndex>
 
 #include <iostream>
 
@@ -68,17 +68,17 @@ XXX */
 //   send box with offline prechecked
 
 //XXX
-std::string serializeTransaction(PartiallySignedTransaction psbtx) {
+std::string serializeTransaction(PartiallySignedTransaction psbtx)
+{
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << psbtx;
     return ssTx.str();
 }
 
-OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletModel *walletModel, ClientModel *clientModel) :
-    QDialog(parent),
-    ui(new Ui::OfflineTransactionsDialog),
-    walletModel(walletModel),
-    clientModel(clientModel)
+OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget* parent, WalletModel* walletModel, ClientModel* clientModel) : QDialog(parent),
+                                                                                                                            ui(new Ui::OfflineTransactionsDialog),
+                                                                                                                            walletModel(walletModel),
+                                                                                                                            clientModel(clientModel)
 {
     ui->setupUi(this);
     setWindowTitle("Review offline transaction");
@@ -94,11 +94,11 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget *parent, WalletMode
         transactionText[i]->setWordWrapMode(QTextOption::WrapAnywhere);
     }
 
-    connect(ui->saveToFileButton1, &QPushButton::clicked, [this](){ saveToFile(1); });
-    connect(ui->saveToFileButton2, &QPushButton::clicked, [this](){ saveToFile(2); });
+    connect(ui->saveToFileButton1, &QPushButton::clicked, [this]() { saveToFile(1); });
+    connect(ui->saveToFileButton2, &QPushButton::clicked, [this]() { saveToFile(2); });
 
-    connect(ui->copyToClipboardButton1, &QPushButton::clicked, [this](){ clipboardCopy(1); });
-    connect(ui->copyToClipboardButton2, &QPushButton::clicked, [this](){ clipboardCopy(2); });
+    connect(ui->copyToClipboardButton1, &QPushButton::clicked, [this]() { clipboardCopy(1); });
+    connect(ui->copyToClipboardButton2, &QPushButton::clicked, [this]() { clipboardCopy(2); });
 
     connect(ui->loadFromFileButton2, &QPushButton::clicked, [this]() { loadFromFile(2); });
     connect(ui->loadFromFileButton3, &QPushButton::clicked, [this]() { loadFromFile(3); });
@@ -122,20 +122,22 @@ OfflineTransactionsDialog::~OfflineTransactionsDialog()
     delete ui;
 }
 
-void OfflineTransactionsDialog::advancedClicked(bool checked) {
+void OfflineTransactionsDialog::advancedClicked(bool checked)
+{
     ui->copyToClipboardButton1->setVisible(checked);
     ui->copyToClipboardButton2->setVisible(checked);
     ui->pasteButton2->setVisible(checked);
     ui->pasteButton3->setVisible(checked);
 
     for (int tabId = 1; tabId <= 3; ++tabId) {
-        if (transactionData[tabId].tx) {  // XXX should be outer layer optional
+        if (transactionData[tabId].tx) { // XXX should be outer layer optional
             transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
         }
     }
 }
 
-void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx) {
+void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
+{
     setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
 
     PartiallySignedTransaction psbtx((CMutableTransaction)(*tx));
@@ -155,16 +157,19 @@ void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
 }
 
 //XXX is this still necessary with prev/next buttons gone
-void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state) {
+void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state)
+{
     ui->tabWidget->setCurrentIndex(state);
 }
 
-enum OfflineTransactionsDialog::WorkflowState OfflineTransactionsDialog::workflowState() {
+enum OfflineTransactionsDialog::WorkflowState OfflineTransactionsDialog::workflowState()
+{
     return (OfflineTransactionsDialog::WorkflowState)
-            ui->tabWidget->currentIndex();
+        ui->tabWidget->currentIndex();
 }
 
-void OfflineTransactionsDialog::nextState() {
+void OfflineTransactionsDialog::nextState()
+{
     //XXX
     switch (workflowState()) {
     case OfflineTransactionsDialog::GetUnsignedTransaction:
@@ -179,7 +184,8 @@ void OfflineTransactionsDialog::nextState() {
     }
 }
 
-void OfflineTransactionsDialog::prevState() {
+void OfflineTransactionsDialog::prevState()
+{
     //XXX
     switch (workflowState()) {
     case OfflineTransactionsDialog::SignTransaction:
@@ -194,7 +200,8 @@ void OfflineTransactionsDialog::prevState() {
     }
 }
 
-void OfflineTransactionsDialog::saveToFile(int tabId) {
+void OfflineTransactionsDialog::saveToFile(int tabId)
+{
     QString filename = GUIUtil::getSaveFileName(this,
         tr("Save Transaction Data"), QString(),
         tr("Partially Signed Transaction (*.psbt)"), nullptr);
@@ -209,7 +216,8 @@ void OfflineTransactionsDialog::saveToFile(int tabId) {
     out.close();
 }
 
-void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data) {
+void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data)
+{
     std::string error;
     PartiallySignedTransaction psbtx;
     if (!DecodeRawPSBT(psbtx, data, error)) {
@@ -242,7 +250,8 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data) {
     transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
 }
 
-void OfflineTransactionsDialog::loadFromFile(int tabId) {
+void OfflineTransactionsDialog::loadFromFile(int tabId)
+{
     QString filename = GUIUtil::getOpenFileName(this,
         tr("Load Transaction Data"), QString(),
         tr("Partially Signed Transaction (*.psbt)"), nullptr);
@@ -257,11 +266,13 @@ void OfflineTransactionsDialog::loadFromFile(int tabId) {
     loadTransaction(tabId, data);
 }
 
-void OfflineTransactionsDialog::clipboardCopy(int tabId) {
+void OfflineTransactionsDialog::clipboardCopy(int tabId)
+{
     QApplication::clipboard()->setText(QString::fromStdString(EncodeBase64(serializeTransaction(transactionData[tabId]))));
 }
 
-void OfflineTransactionsDialog::clipboardPaste(int tabId) {
+void OfflineTransactionsDialog::clipboardPaste(int tabId)
+{
     std::string data = QApplication::clipboard()->text().toStdString();
     bool invalid;
     std::string decoded = DecodeBase64(data, &invalid);
@@ -273,7 +284,8 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId) {
     loadTransaction(tabId, decoded);
 }
 
-void OfflineTransactionsDialog::signTransaction() {
+void OfflineTransactionsDialog::signTransaction()
+{
     bool complete;
     TransactionError err = walletModel->FillPSBT(transactionData[2], complete, SIGHASH_ALL, true, true);
     if (err != TransactionError::OK) {
@@ -296,7 +308,8 @@ void OfflineTransactionsDialog::signTransaction() {
     // XXX TK put up a 'signed' modal here
 }
 
-void OfflineTransactionsDialog::broadcastTransaction() {
+void OfflineTransactionsDialog::broadcastTransaction()
+{
     // XXX these need to be option<> -- if we try to broadcast with no transaction we crash here. (and probably need more try{} blocks...)
     PartiallySignedTransaction psbtx = transactionData[3];
     // XXX hmm, the psbt code that's not wallet-based should NOT go through teh wallet model. But somehow we should be able to call out to it instead of open-code it.
@@ -323,14 +336,15 @@ void OfflineTransactionsDialog::broadcastTransaction() {
     if (error == TransactionError::OK) {
         message = "Transaction broadcast successfully! Transaction ID: " + txid.GetHex();
     } else {
-        message = "Transaction broadcast failed: "+ err_string;
+        message = "Transaction broadcast failed: " + err_string;
     }
 
     resetAssembledTransaction();
     ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross
 }
 
-void OfflineTransactionsDialog::resetAssembledTransaction() {
+void OfflineTransactionsDialog::resetAssembledTransaction()
+{
     started_tx_assembly = false;
     transactionData[3] = PartiallySignedTransaction();
     transactionText[3]->setPlainText("");
@@ -338,7 +352,8 @@ void OfflineTransactionsDialog::resetAssembledTransaction() {
     ui->broadcastTransactionButton->setEnabled(false);
 }
 
-std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransaction psbtx) {
+std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransaction psbtx)
+{
     PSBTAnalysis analysis = AnalyzePSBT(psbtx);
 
     // XXX copied from sendcoinsdialog.cpp
@@ -350,7 +365,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
         // XXX also, this is bad because it puts SIGNED in the broadcast box when we paste a transaction after signing -- in general 'signed' is not a state that sticks around, or is cross-tab -- we should have this as something like a butterbar on tab 2, instead.
     }
 
-    questionString.append("Transaction preview:\n");  // XXX removed tr() macro
+    questionString.append("Transaction preview:\n"); // XXX removed tr() macro
 
     CAmount txFee = 0;
     if (analysis.fee) {
@@ -369,8 +384,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
         questionString.append(QString("Sends %1 bitcoins to %2\n").arg((double)out.nValue / (double)COIN).arg(QString::fromStdString(EncodeDestination(address))));
     }
 
-    if(txFee > 0)
-    {
+    if (txFee > 0) {
         // append fee string if a fee is required
         questionString.append(tr("Transaction fee: "));
 
@@ -390,7 +404,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
         //}
         //questionString.append("</span>");
     }
-/*
+    /*
     // add total amount in all subdivision units
     questionString.append("<hr />");
     CAmount totalAmount = currentTransaction.getTotalTransactionAmount() + txFee;

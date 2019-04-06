@@ -7,9 +7,9 @@
 
 #include <amount.h>
 #include <key.h>
-#include <serialize.h>
+#include <script/sign.h> // XXX for PartiallySignedTransaction
 #include <script/standard.h>
-#include <script/sign.h>  // XXX for PartiallySignedTransaction
+#include <serialize.h>
 
 #if defined(HAVE_CONFIG_H)
 #include <config/bitcoin-config.h>

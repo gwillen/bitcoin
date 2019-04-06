@@ -18,7 +18,7 @@
 #include <tuple>
 #include <vector>
 
-#include <node/transaction.h>  // for TransactionError, CTransactionRef; is this bad?
+#include <node/transaction.h> // for TransactionError, CTransactionRef; is this bad?
 
 class BanMan;
 class CCoinControl;
@@ -199,7 +199,7 @@ public:
     //! with handleLoadWallet.
     virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, std::string& error, std::string& warning) = 0;
 
-//! Broadcast a CTransactionRef to the network.
+    //! Broadcast a CTransactionRef to the network.
     virtual TransactionError broadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees = false) = 0;
 
     //! Register handler for init messages.

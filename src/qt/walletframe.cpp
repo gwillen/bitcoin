@@ -226,7 +226,7 @@ void WalletFrame::outOfSyncWarningClicked()
 
 void WalletFrame::gotoOfflineCreate()
 {
-    WalletView *walletView = currentWalletView();
+    WalletView* walletView = currentWalletView();
     if (walletView) {
         walletView->gotoOfflineCreate();
     }
@@ -234,14 +234,14 @@ void WalletFrame::gotoOfflineCreate()
 
 void WalletFrame::gotoOfflineSign()
 {
-    WalletView *walletView = currentWalletView();
+    WalletView* walletView = currentWalletView();
     if (walletView)
         walletView->gotoOfflineSign();
 }
 
 void WalletFrame::gotoOfflineBroadcast()
 {
-    WalletView *walletView = currentWalletView();
+    WalletView* walletView = currentWalletView();
     if (walletView)
         walletView->gotoOfflineBroadcast();
 }

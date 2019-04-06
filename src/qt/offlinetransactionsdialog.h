@@ -12,7 +12,7 @@
 #include <qt/walletmodel.h>
 
 namespace Ui {
-    class OfflineTransactionsDialog;
+class OfflineTransactionsDialog;
 }
 
 QT_BEGIN_NAMESPACE
@@ -32,7 +32,7 @@ public:
         BroadcastTransaction = 2,
     };
 
-    explicit OfflineTransactionsDialog(QWidget *parent, WalletModel *walletModel, ClientModel *clientModel);
+    explicit OfflineTransactionsDialog(QWidget* parent, WalletModel* walletModel, ClientModel* clientModel);
     ~OfflineTransactionsDialog();
 
     void setFirstTabTransaction(const CTransactionRef tx);
@@ -56,13 +56,13 @@ public Q_SLOTS:
     void resetAssembledTransaction();
 
 private:
-    Ui::OfflineTransactionsDialog *ui;
-    PartiallySignedTransaction transactionData[4];  // 1-indexed by tab to avoid confusion; 0 unused
+    Ui::OfflineTransactionsDialog* ui;
+    PartiallySignedTransaction transactionData[4]; // 1-indexed by tab to avoid confusion; 0 unused
     bool did_sign_tx = false;
     bool started_tx_assembly = false;
-    QPlainTextEdit *(transactionText[4]);  // 1-indexed by tab to avoid confusion; 0 unused
-    WalletModel *walletModel;
-    ClientModel *clientModel;
+    QPlainTextEdit*(transactionText[4]); // 1-indexed by tab to avoid confusion; 0 unused
+    WalletModel* walletModel;
+    ClientModel* clientModel;
 
     std::string renderTransaction(PartiallySignedTransaction psbtx);
     void loadTransaction(int tabId, std::string data);
