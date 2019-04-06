@@ -614,9 +614,7 @@ void CoinControlDialog::updateView()
 
     int nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
 
-    fprintf(stderr, "allow watch only? %d\n", coinControl()->fAllowWatchOnly);
     for (const auto& coins : model->wallet().listCoins(coinControl()->fAllowWatchOnly)) {
-        fprintf(stderr, "a coin!\n");
         CCoinControlWidgetItem *itemWalletAddress = new CCoinControlWidgetItem();
         itemWalletAddress->setCheckState(COLUMN_CHECKBOX, Qt::Unchecked);
         QString sWalletAddress = QString::fromStdString(EncodeDestination(coins.first));
@@ -719,7 +717,6 @@ void CoinControlDialog::updateView()
             itemWalletAddress->setData(COLUMN_AMOUNT, Qt::UserRole, QVariant((qlonglong)nSum));
         }
     }
-    fprintf(stderr, "done coins\n");
 
     // expand all partially selected
     if (treeMode)

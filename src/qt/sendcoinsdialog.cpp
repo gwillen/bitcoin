@@ -53,14 +53,15 @@ int getIndexForConfTarget(int target) {
     return confTargets.size() - 1;
 }
 
-SendCoinsDialog::SendCoinsDialog(const PlatformStyle* _platformStyle, QWidget* parent) : QDialog(parent),
-                                                                                         ui(new Ui::SendCoinsDialog),
-                                                                                         clientModel(nullptr),
-                                                                                         model(nullptr),
-                                                                                         fNewRecipientAllowed(true),
-                                                                                         fFeeMinimized(true),
-                                                                                         platformStyle(_platformStyle),
-                                                                                         fCreateUnsignedTransactionCheckedPrev(Qt::Checked)
+SendCoinsDialog::SendCoinsDialog(const PlatformStyle* _platformStyle, QWidget* parent) :
+    QDialog(parent),
+    ui(new Ui::SendCoinsDialog),
+    clientModel(nullptr),
+    model(nullptr),
+    fNewRecipientAllowed(true),
+    fFeeMinimized(true),
+    platformStyle(_platformStyle),
+    fCreateUnsignedTransactionCheckedPrev(Qt::Checked)
 {
     ui->setupUi(this);
 
@@ -703,7 +704,6 @@ void SendCoinsDialog::updateCoinControlState(CCoinControl& ctrl)
     }
 
     if (ui->checkBoxIncludeWatchonlyCoins->isChecked()) {
-        fprintf(stderr, "allow watchonly: set\n");
         ctrl.fAllowWatchOnly = true;
     } else {
         ctrl.fAllowWatchOnly = false;
@@ -716,7 +716,7 @@ void SendCoinsDialog::updateCoinControlState(CCoinControl& ctrl)
 
 void SendCoinsDialog::updateSmartFeeLabel()
 {
-    if (!model || !model->getOptionsModel())
+    if(!model || !model->getOptionsModel())
         return;
     CCoinControl coin_control;
     updateCoinControlState(coin_control);
@@ -964,7 +964,9 @@ void SendCoinsDialog::includeWatchonlyCoinsChecked(int state)
     updateCoinControlState(*CoinControlDialog::coinControl());
 }
 
-SendConfirmationDialog::SendConfirmationDialog(const QString& title, const QString& text, int _secDelay, QWidget* parent) : QMessageBox(QMessageBox::Question, title, text, QMessageBox::Yes | QMessageBox::Cancel, parent), secDelay(_secDelay)
+SendConfirmationDialog::SendConfirmationDialog(const QString &title, const QString &text, int _secDelay,
+    QWidget *parent) :
+    QMessageBox(QMessageBox::Question, title, text, QMessageBox::Yes | QMessageBox::Cancel, parent), secDelay(_secDelay)
 {
     setDefaultButton(QMessageBox::Cancel);
     yesButton = button(QMessageBox::Yes);
