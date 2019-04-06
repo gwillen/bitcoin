@@ -205,7 +205,8 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         std::string strFailReason;
 
         auto& newTx = transaction.getWtx();
-        newTx = m_wallet->createTransaction(vecSend, coinControl, true /* sign */, nChangePosRet, nFeeRequired, strFailReason);
+        bool doSign = !coinControl.fAllowWatchOnly; // If we are allowing watchonly, we are inherently not asking to sign
+        newTx = m_wallet->createTransaction(vecSend, coinControl, doSign, nChangePosRet, nFeeRequired, strFailReason);
         transaction.setTransactionFee(nFeeRequired);
         if (fSubtractFeeFromAmount && newTx)
             transaction.reassignAmounts(nChangePosRet);
@@ -370,6 +371,11 @@ bool WalletModel::changePassphrase(const SecureString &oldPass, const SecureStri
 {
     m_wallet->lock(); // Make sure wallet is locked before attempting pass change
     return m_wallet->changeWalletPassphrase(oldPass, newPass);
+}
+
+TransactionError WalletModel::FillPSBT(PartiallySignedTransaction& psbtx, bool& complete, int sighash_type, bool sign, bool bip32derivs)
+{
+    return m_wallet->FillPSBT(psbtx, complete, sighash_type, sign, bip32derivs);
 }
 
 // Handlers for core signals

@@ -18,6 +18,8 @@
 #include <tuple>
 #include <vector>
 
+#include <node/transaction.h> // for TransactionError, CTransactionRef; is this bad?
+
 class BanMan;
 class CCoinControl;
 class CFeeRate;
@@ -196,6 +198,9 @@ public:
     //! The loaded wallet is also notified to handlers previously registered
     //! with handleLoadWallet.
     virtual std::unique_ptr<Wallet> loadWallet(const std::string& name, std::string& error, std::string& warning) = 0;
+
+    //! Broadcast a CTransactionRef to the network.
+    virtual TransactionError broadcastTransaction(CTransactionRef tx, uint256& txid, std::string& err_string, bool allowhighfees = false) = 0;
 
     //! Register handler for init messages.
     using InitMessageFn = std::function<void(const std::string& message)>;

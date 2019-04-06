@@ -213,3 +213,25 @@ void WalletFrame::outOfSyncWarningClicked()
 {
     Q_EMIT requestedSyncWarningInfo();
 }
+
+void WalletFrame::gotoOfflineCreate()
+{
+    WalletView* walletView = currentWalletView();
+    if (walletView) {
+        walletView->gotoOfflineCreate();
+    }
+}
+
+void WalletFrame::gotoOfflineSign()
+{
+    WalletView* walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoOfflineSign();
+}
+
+void WalletFrame::gotoOfflineBroadcast()
+{
+    WalletView* walletView = currentWalletView();
+    if (walletView)
+        walletView->gotoOfflineBroadcast();
+}

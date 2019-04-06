@@ -15,6 +15,7 @@
 #include <policy/fees.h>
 #include <policy/policy.h>
 #include <primitives/transaction.h>
+#include <rpc/rawtransaction.h>
 #include <rpc/server.h>
 #include <scheduler.h>
 #include <script/ismine.h>
@@ -28,6 +29,7 @@
 #include <validation.h>
 #include <wallet/feebumper.h>
 #include <wallet/fees.h>
+#include <wallet/psbtwallet.h>
 #include <wallet/rpcwallet.h>
 #include <wallet/wallet.h>
 #include <wallet/walletutil.h>
@@ -143,6 +145,16 @@ public:
         const SecureString& new_wallet_passphrase) override
     {
         return m_wallet->ChangeWalletPassphrase(old_wallet_passphrase, new_wallet_passphrase);
+    }
+
+    TransactionError FillPSBT(PartiallySignedTransaction& psbtx,
+        bool& complete,
+        int sighash_type,
+        bool sign,
+        bool bip32derivs) override
+    {
+        // XXX we are throwing away the protection of shared_ptr here, is that what we want?
+        return ::FillPSBT(m_wallet.get(), psbtx, complete, sighash_type, sign, bip32derivs);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }
     bool backupWallet(const std::string& filename) override { return m_wallet->BackupWallet(filename); }
@@ -411,12 +423,12 @@ public:
         LOCK(m_wallet->cs_wallet);
         return m_wallet->GetCredit(txout, filter);
     }
-    CoinsList listCoins() override
+    CoinsList listCoins(bool allowWatchOnly=false) override
     {
         auto locked_chain = m_wallet->chain().lock();
         LOCK(m_wallet->cs_wallet);
         CoinsList result;
-        for (const auto& entry : m_wallet->ListCoins(*locked_chain)) {
+        for (const auto& entry : m_wallet->ListCoins(*locked_chain, allowWatchOnly)) {
             auto& group = result[entry.first];
             for (const auto& coin : entry.second) {
                 group.emplace_back(COutPoint(coin.tx->GetHash(), coin.i),

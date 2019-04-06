@@ -14,6 +14,7 @@
 #include <qt/clientmodel.h>
 #include <qt/coincontroldialog.h>
 #include <qt/guiutil.h>
+#include <qt/offlinetransactionsdialog.h>
 #include <qt/optionsmodel.h>
 #include <qt/platformstyle.h>
 #include <qt/sendcoinsentry.h>
@@ -21,11 +22,12 @@
 #include <chainparams.h>
 #include <interfaces/node.h>
 #include <key_io.h>
-#include <wallet/coincontrol.h>
-#include <ui_interface.h>
-#include <txmempool.h>
 #include <policy/fees.h>
+#include <txmempool.h>
+#include <ui_interface.h>
+#include <wallet/coincontrol.h>
 #include <wallet/fees.h>
+#include <wallet/rpcwallet.h> // XXX gross
 
 #include <QFontMetrics>
 #include <QScrollBar>
@@ -51,14 +53,14 @@ int getIndexForConfTarget(int target) {
     return confTargets.size() - 1;
 }
 
-SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::SendCoinsDialog),
-    clientModel(nullptr),
-    model(nullptr),
-    fNewRecipientAllowed(true),
-    fFeeMinimized(true),
-    platformStyle(_platformStyle)
+SendCoinsDialog::SendCoinsDialog(const PlatformStyle* _platformStyle, QWidget* parent) : QDialog(parent),
+                                                                                         ui(new Ui::SendCoinsDialog),
+                                                                                         clientModel(nullptr),
+                                                                                         model(nullptr),
+                                                                                         fNewRecipientAllowed(true),
+                                                                                         fFeeMinimized(true),
+                                                                                         platformStyle(_platformStyle),
+                                                                                         fCreateUnsignedTransactionCheckedPrev(Qt::Checked)
 {
     ui->setupUi(this);
 
@@ -125,6 +127,15 @@ SendCoinsDialog::SendCoinsDialog(const PlatformStyle *_platformStyle, QWidget *p
     ui->customFee->SetAllowEmpty(false);
     ui->customFee->setValue(settings.value("nTransactionFee").toLongLong());
     minimizeFeeSection(settings.value("fFeeSectionMinimized").toBool());
+
+    // init unsigned transaction related options
+    ui->checkBoxCreateUnsignedTransaction->setChecked(false);
+    ui->checkBoxIncludeWatchonlyCoins->setChecked(false);
+    ui->labelWatchonlyText->setVisible(false);
+    ui->labelWatchonlyBalance->setVisible(false);
+    ui->labelWatchonlySeparator->setVisible(false);
+    connect(ui->checkBoxCreateUnsignedTransaction, &QCheckBox::stateChanged, this, &SendCoinsDialog::createUnsignedTransactionChecked);
+    connect(ui->checkBoxIncludeWatchonlyCoins, &QCheckBox::stateChanged, this, &SendCoinsDialog::includeWatchonlyCoinsChecked);
 }
 
 void SendCoinsDialog::setClientModel(ClientModel *_clientModel)
@@ -162,6 +173,10 @@ void SendCoinsDialog::setModel(WalletModel *_model)
         connect(_model->getOptionsModel(), &OptionsModel::coinControlFeaturesChanged, this, &SendCoinsDialog::coinControlFeatureChanged);
         ui->frameCoinControl->setVisible(_model->getOptionsModel()->getCoinControlFeatures());
         coinControlUpdateLabels();
+
+        // offline transactions
+        connect(_model->getOptionsModel(), &OptionsModel::offlineTransactionFeaturesChanged, this, &SendCoinsDialog::offlineTransactionFeatureChanged);
+        ui->widgetOfflineTransactions->setVisible(_model->getOptionsModel()->getOfflineTransactionFeatures());
 
         // fee section
         for (const int n : confTargets) {
@@ -366,28 +381,39 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     SendConfirmationDialog confirmationDialog(tr("Confirm send coins"),
         questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
-    confirmationDialog.exec();
-    QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmationDialog.result());
 
-    if(retval != QMessageBox::Yes)
-    {
+    if (!ui->checkBoxCreateUnsignedTransaction->isChecked()) {
+        confirmationDialog.exec();
+        QMessageBox::StandardButton retval = static_cast<QMessageBox::StandardButton>(confirmationDialog.result());
+
+        if (retval != QMessageBox::Yes) {
+            fNewRecipientAllowed = true;
+            return;
+        }
+
+        // now send the prepared transaction
+        WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
+        // process sendStatus and on error generate message shown to user
+        processSendCoinsReturn(sendStatus);
+
+        // XXX do we need to do any of this in the unsigned case?
+        if (sendStatus.status == WalletModel::OK) {
+            accept();
+            CoinControlDialog::coinControl()->UnSelectAll();
+            coinControlUpdateLabels();
+            Q_EMIT coinsSent(currentTransaction.getWtx()->get().GetHash());
+        }
         fNewRecipientAllowed = true;
         return;
+    } else {
+        // Create unsigned transaction, don't send
+        OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, model, clientModel);
+        dlg->setFirstTabTransaction(MakeTransactionRef(currentTransaction.getWtx()->get())); // XXX not sure if transactionref is the right thing here
+        dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
+        dlg->setAttribute(Qt::WA_DeleteOnClose);
+        dlg->exec();
+        accept(); // XXX?
     }
-
-    // now send the prepared transaction
-    WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
-    // process sendStatus and on error generate message shown to user
-    processSendCoinsReturn(sendStatus);
-
-    if (sendStatus.status == WalletModel::OK)
-    {
-        accept();
-        CoinControlDialog::coinControl()->UnSelectAll();
-        coinControlUpdateLabels();
-        Q_EMIT coinsSent(currentTransaction.getWtx()->get().GetHash());
-    }
-    fNewRecipientAllowed = true;
 }
 
 void SendCoinsDialog::clear()
@@ -528,11 +554,16 @@ bool SendCoinsDialog::handlePaymentRequest(const SendCoinsRecipient &rv)
     return true;
 }
 
+void SendCoinsDialog::setIncludeWatchonly(bool allow) {
+    ui->checkBoxIncludeWatchonlyCoins->setCheckState(
+                allow ? Qt::CheckState::Checked : Qt::CheckState::Unchecked);
+}
+
 void SendCoinsDialog::setBalance(const interfaces::WalletBalances& balances)
 {
-    if(model && model->getOptionsModel())
-    {
+    if (model && model->getOptionsModel()) {
         ui->labelBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.balance));
+        ui->labelWatchonlyBalance->setText(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), balances.watch_only_balance));
     }
 }
 
@@ -670,6 +701,13 @@ void SendCoinsDialog::updateCoinControlState(CCoinControl& ctrl)
     } else {
         ctrl.m_feerate.reset();
     }
+
+    if (ui->checkBoxIncludeWatchonlyCoins->isChecked()) {
+        fprintf(stderr, "allow watchonly: set\n");
+        ctrl.fAllowWatchOnly = true;
+    } else {
+        ctrl.fAllowWatchOnly = false;
+    }
     // Avoid using global defaults when sending money from the GUI
     // Either custom fee will be used or if not selected, the confirmation target from dropdown box
     ctrl.m_confirm_target = getConfTargetForIndex(ui->confTargetSelector->currentIndex());
@@ -678,7 +716,7 @@ void SendCoinsDialog::updateCoinControlState(CCoinControl& ctrl)
 
 void SendCoinsDialog::updateSmartFeeLabel()
 {
-    if(!model || !model->getOptionsModel())
+    if (!model || !model->getOptionsModel())
         return;
     CCoinControl coin_control;
     updateCoinControlState(coin_control);
@@ -881,9 +919,52 @@ void SendCoinsDialog::coinControlUpdateLabels()
     }
 }
 
-SendConfirmationDialog::SendConfirmationDialog(const QString &title, const QString &text, int _secDelay,
-    QWidget *parent) :
-    QMessageBox(QMessageBox::Question, title, text, QMessageBox::Yes | QMessageBox::Cancel, parent), secDelay(_secDelay)
+// Offline Transactions: settings menu - offline transaction settings enabled/disabled by user
+void SendCoinsDialog::offlineTransactionFeatureChanged(bool checked)
+{
+    ui->widgetOfflineTransactions->setVisible(checked);
+
+    if (!checked && model) { // offline transaction features disabled
+        ui->checkBoxIncludeWatchonlyCoins->setCheckState(Qt::Unchecked);
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(Qt::Unchecked);
+    }
+}
+
+// Offline Transactions: create unsigned Transaction checkbox
+void SendCoinsDialog::createUnsignedTransactionChecked(int state)
+{
+    if (state == Qt::Checked) {
+        ui->sendButton->setText(QStringLiteral("Create Unsigned"));
+    } else {
+        ui->sendButton->setText(QStringLiteral("Send"));
+    }
+}
+
+// Offline Transactions: include watchonly coins checkbox
+void SendCoinsDialog::includeWatchonlyCoinsChecked(int state)
+{
+    if (state == Qt::Checked) {
+        fCreateUnsignedTransactionCheckedPrev = ui->checkBoxCreateUnsignedTransaction->checkState();
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(Qt::Checked);
+        ui->checkBoxCreateUnsignedTransaction->setEnabled(false);
+        ui->labelWatchonlyText->setVisible(true);
+        ui->labelWatchonlyBalance->setVisible(true);
+        ui->labelWatchonlySeparator->setVisible(true);
+    } else {
+        ui->checkBoxCreateUnsignedTransaction->setCheckState(fCreateUnsignedTransactionCheckedPrev);
+        ui->checkBoxCreateUnsignedTransaction->setEnabled(true);
+        ui->labelWatchonlyText->setVisible(false);
+        ui->labelWatchonlyBalance->setVisible(false);
+        ui->labelWatchonlySeparator->setVisible(false);
+
+        // Clear in case there are watchonly coins selected, to avoid an inconsistent state
+        CoinControlDialog::coinControl()->UnSelectAll();
+    }
+
+    updateCoinControlState(*CoinControlDialog::coinControl());
+}
+
+SendConfirmationDialog::SendConfirmationDialog(const QString& title, const QString& text, int _secDelay, QWidget* parent) : QMessageBox(QMessageBox::Question, title, text, QMessageBox::Yes | QMessageBox::Cancel, parent), secDelay(_secDelay)
 {
     setDefaultButton(QMessageBox::Cancel);
     yesButton = button(QMessageBox::Yes);

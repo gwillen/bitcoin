@@ -2359,14 +2359,16 @@ void CWallet::AvailableCoins(interfaces::Chain::Lock& locked_chain, std::vector<
     }
 }
 
-std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain) const
+std::map<CTxDestination, std::vector<COutput>> CWallet::ListCoins(interfaces::Chain::Lock& locked_chain, bool allowWatchOnly) const
 {
     AssertLockHeld(cs_wallet);
 
     std::map<CTxDestination, std::vector<COutput>> result;
     std::vector<COutput> availableCoins;
 
-    AvailableCoins(locked_chain, availableCoins);
+    CCoinControl coinControl;
+    coinControl.fAllowWatchOnly = allowWatchOnly;
+    AvailableCoins(locked_chain, availableCoins, true, &coinControl);
 
     for (const COutput& coin : availableCoins) {
         CTxDestination address;

@@ -45,6 +45,7 @@
 #include <QDateTime>
 #include <QDesktopWidget>
 #include <QDragEnterEvent>
+#include <QErrorMessage> // XXX
 #include <QListWidget>
 #include <QMenu>
 #include <QMenuBar>
@@ -320,6 +321,14 @@ void BitcoinGUI::createActions()
     verifyMessageAction = new QAction(platformStyle->TextColorIcon(":/icons/verify"), tr("&Verify message..."), this);
     verifyMessageAction->setStatusTip(tr("Verify messages to ensure they were signed with specified Bitcoin addresses"));
 
+    // XXX icon choices mostly arbitrary
+    offlineCreateAction = new QAction(platformStyle->TextColorIcon(":/icons/send"), tr("&Create offline transaction..."), this);
+    offlineCreateAction->setStatusTip(tr("Open the send dialog configured to create an unsigned offline transaction"));
+    offlineSignAction = new QAction(platformStyle->TextColorIcon(":/icons/key"), tr("&Sign offline transaction..."), this);
+    offlineSignAction->setStatusTip(tr("Sign a transaction on an offline computer"));
+    offlineBroadcastAction = new QAction(platformStyle->TextColorIcon(":/icons/connect4"), tr("&Assemble and broadcast offline transaction..."), this);
+    offlineBroadcastAction->setStatusTip(tr("Assemble and broadcast signed transaction(s) copied from an offline computer"));
+
     openRPCConsoleAction = new QAction(platformStyle->TextColorIcon(":/icons/debugwindow"), tr("&Debug window"), this);
     openRPCConsoleAction->setStatusTip(tr("Open debugging and diagnostic console"));
     // initially disable the debug window menu item
@@ -404,6 +413,13 @@ void BitcoinGUI::createActions()
         connect(m_close_wallet_action, &QAction::triggered, [this] {
             m_wallet_controller->closeWallet(walletFrame->currentWalletModel(), this);
         });
+
+        // offlineCreateAction is special because it needs to open the send coins page,
+        //   which can only be correctly done from inside BitcoinGui. XXX jank level: medium
+        connect(offlineCreateAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineCreate);
+        connect(offlineCreateAction, &QAction::triggered, [this] { gotoSendCoinsPage(); });
+        connect(offlineSignAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineSign);
+        connect(offlineBroadcastAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineBroadcast);
     }
 #endif // ENABLE_WALLET
 
@@ -502,11 +518,24 @@ void BitcoinGUI::createMenuBar()
         });
     }
 
+    offlineMenu = appMenuBar->addMenu(tr("&Offline"));
+    setOfflineMenuVisible(false);
+    if (walletFrame) {
+        offlineMenu->addAction(offlineCreateAction);
+        offlineMenu->addAction(offlineSignAction);
+        offlineMenu->addAction(offlineBroadcastAction);
+    }
+
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
     help->addAction(showHelpMessageAction);
     help->addSeparator();
     help->addAction(aboutAction);
     help->addAction(aboutQtAction);
+}
+
+void BitcoinGUI::setOfflineMenuVisible(bool visible)
+{
+    offlineMenu->menuAction()->setVisible(visible);
 }
 
 void BitcoinGUI::createToolBars()
@@ -592,6 +621,10 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel)
             // initialize the disable state of the tray icon with the current value in the model.
             setTrayIconVisible(optionsModel->getHideTrayIcon());
         }
+
+        // enable/disable the offline transactions menu based on the setting in the model -- XXX should this depend on the wallet / walletframe? in principle you can broadcast without a wallet but you can't send or sign.
+        setOfflineMenuVisible(optionsModel->getOfflineTransactionFeatures());
+        connect(optionsModel, &OptionsModel::offlineTransactionFeaturesChanged, this, &BitcoinGUI::setOfflineMenuVisible);
     } else {
         // Disable possibility to show main window via action
         toggleHideAction->setEnabled(false);
