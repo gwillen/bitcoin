@@ -18,7 +18,7 @@
 #include <tuple>
 #include <vector>
 
-#include <node/transaction.h> // for TransactionError, CTransactionRef; is this bad?
+#include <node/transaction.h> // for TransactionError, CTransactionRef; is this bad? XXX
 
 class BanMan;
 class CCoinControl;
