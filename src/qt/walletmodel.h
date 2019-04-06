@@ -7,7 +7,7 @@
 
 #include <amount.h>
 #include <key.h>
-#include <script/sign.h> // XXX for PartiallySignedTransaction
+#include <script/sign.h>
 #include <script/standard.h>
 #include <serialize.h>
 

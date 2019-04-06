@@ -79,7 +79,7 @@ public Q_SLOTS:
     /** Switch to receive coins page */
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
-    void gotoSendCoinsPage(QString addr = "");
+    void gotoSendCoinsPage(QString addr = "", bool includeWatchOnly = false);
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");
@@ -114,9 +114,9 @@ public Q_SLOTS:
     /** User has requested more information about the out of sync state */
     void requestedSyncWarningInfo();
 
-    /** XXX */
-    void gotoOfflineCreate();
+    /** Open the offline transaction signing dialog tab */
     void gotoOfflineSign();
+    /** Open the offline transaction broadcast dialog tab */
     void gotoOfflineBroadcast();
 
 Q_SIGNALS:

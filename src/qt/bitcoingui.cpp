@@ -45,7 +45,6 @@
 #include <QDateTime>
 #include <QDesktopWidget>
 #include <QDragEnterEvent>
-#include <QErrorMessage> // XXX
 #include <QListWidget>
 #include <QMenu>
 #include <QMenuBar>
@@ -414,10 +413,7 @@ void BitcoinGUI::createActions()
             m_wallet_controller->closeWallet(walletFrame->currentWalletModel(), this);
         });
 
-        // offlineCreateAction is special because it needs to open the send coins page,
-        //   which can only be correctly done from inside BitcoinGui. XXX jank level: medium
-        connect(offlineCreateAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineCreate);
-        connect(offlineCreateAction, &QAction::triggered, [this] { gotoSendCoinsPage(); });
+        connect(offlineCreateAction, &QAction::triggered, [this] { gotoSendCoinsPage("", true); });
         connect(offlineSignAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineSign);
         connect(offlineBroadcastAction, &QAction::triggered, walletFrame, &WalletFrame::gotoOfflineBroadcast);
     }
@@ -622,7 +618,6 @@ void BitcoinGUI::setClientModel(ClientModel *_clientModel)
             setTrayIconVisible(optionsModel->getHideTrayIcon());
         }
 
-        // enable/disable the offline transactions menu based on the setting in the model -- XXX should this depend on the wallet / walletframe? in principle you can broadcast without a wallet but you can't send or sign.
         setOfflineMenuVisible(optionsModel->getOfflineTransactionFeatures());
         connect(optionsModel, &OptionsModel::offlineTransactionFeaturesChanged, this, &BitcoinGUI::setOfflineMenuVisible);
     } else {
@@ -865,10 +860,10 @@ void BitcoinGUI::gotoReceiveCoinsPage()
     if (walletFrame) walletFrame->gotoReceiveCoinsPage();
 }
 
-void BitcoinGUI::gotoSendCoinsPage(QString addr)
+void BitcoinGUI::gotoSendCoinsPage(QString addr, bool includeWatchonly)
 {
     sendCoinsAction->setChecked(true);
-    if (walletFrame) walletFrame->gotoSendCoinsPage(addr);
+    if (walletFrame) walletFrame->gotoSendCoinsPage(addr, includeWatchonly);
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)

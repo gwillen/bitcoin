@@ -5,10 +5,11 @@
 #ifndef BITCOIN_INTERFACES_NODE_H
 #define BITCOIN_INTERFACES_NODE_H
 
-#include <addrdb.h>     // For banmap_t
-#include <amount.h>     // For CAmount
-#include <net.h>        // For CConnman::NumConnections
-#include <netaddress.h> // For Network
+#include <addrdb.h>           // For banmap_t
+#include <amount.h>           // For CAmount
+#include <net.h>              // For CConnman::NumConnections
+#include <netaddress.h>       // For Network
+#include <node/transaction.h> // for TransactionError, CTransactionRef
 
 #include <functional>
 #include <memory>
@@ -17,8 +18,6 @@
 #include <string>
 #include <tuple>
 #include <vector>
-
-#include <node/transaction.h> // for TransactionError, CTransactionRef; is this bad? XXX
 
 class BanMan;
 class CCoinControl;

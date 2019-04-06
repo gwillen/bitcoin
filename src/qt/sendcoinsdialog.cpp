@@ -27,7 +27,6 @@
 #include <ui_interface.h>
 #include <wallet/coincontrol.h>
 #include <wallet/fees.h>
-#include <wallet/rpcwallet.h> // XXX gross
 
 #include <QFontMetrics>
 #include <QScrollBar>
@@ -397,7 +396,6 @@ void SendCoinsDialog::on_sendButton_clicked()
         // process sendStatus and on error generate message shown to user
         processSendCoinsReturn(sendStatus);
 
-        // XXX do we need to do any of this in the unsigned case?
         if (sendStatus.status == WalletModel::OK) {
             accept();
             CoinControlDialog::coinControl()->UnSelectAll();
@@ -409,11 +407,11 @@ void SendCoinsDialog::on_sendButton_clicked()
     } else {
         // Create unsigned transaction, don't send
         OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, model, clientModel);
-        dlg->setFirstTabTransaction(MakeTransactionRef(currentTransaction.getWtx()->get())); // XXX not sure if transactionref is the right thing here
+        dlg->setFirstTabTransaction(MakeTransactionRef(currentTransaction.getWtx()->get()));
         dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
         dlg->setAttribute(Qt::WA_DeleteOnClose);
         dlg->exec();
-        accept(); // XXX?
+        accept();
     }
 }
 

@@ -191,12 +191,14 @@ void WalletView::gotoReceiveCoinsPage()
     setCurrentWidget(receiveCoinsPage);
 }
 
-void WalletView::gotoSendCoinsPage(QString addr)
+void WalletView::gotoSendCoinsPage(QString addr, bool includeWatchOnly)
 {
     setCurrentWidget(sendCoinsPage);
 
     if (!addr.isEmpty())
         sendCoinsPage->setAddress(addr);
+
+    sendCoinsPage->setIncludeWatchonly(includeWatchOnly);
 }
 
 void WalletView::gotoSignMessageTab(QString addr)
@@ -332,14 +334,6 @@ void WalletView::requestedSyncWarningInfo()
     Q_EMIT outOfSyncWarningClicked();
 }
 
-void WalletView::gotoOfflineCreate()
-{
-    // Caller will activate the send coins page for us. XXX jank level: medium
-
-    // This will automatically take care of the 'create unsigned' checkbox.
-    sendCoinsPage->setIncludeWatchonly(true);
-}
-
 void WalletView::gotoOfflineSign()
 {
     OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, walletModel, clientModel);
@@ -353,18 +347,3 @@ void WalletView::gotoOfflineBroadcast()
     dlg->setWorkflowState(OfflineTransactionsDialog::BroadcastTransaction);
     dlg->exec();
 }
-
-/* XXX
-void WalletView::gotoVerifyMessageTab(QString addr)
-{
-    // calls show() in showTab_VM()
-    SignVerifyMessageDialog *signVerifyMessageDialog = new SignVerifyMessageDialog(platformStyle, this);
-    signVerifyMessageDialog->setAttribute(Qt::WA_DeleteOnClose);
-    signVerifyMessageDialog->setModel(walletModel);
-    signVerifyMessageDialog->showTab_VM(true);
-
-    if (!addr.isEmpty())
-        signVerifyMessageDialog->setAddress_VM(addr);
-}
-
-*/

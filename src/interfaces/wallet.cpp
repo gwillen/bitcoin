@@ -153,7 +153,6 @@ public:
         bool sign,
         bool bip32derivs) override
     {
-        // XXX we are throwing away the protection of shared_ptr here, is that what we want?
         return ::FillPSBT(m_wallet.get(), psbtx, complete, sighash_type, sign, bip32derivs);
     }
     void abortRescan() override { m_wallet->AbortRescan(); }

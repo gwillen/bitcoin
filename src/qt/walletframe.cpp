@@ -135,11 +135,16 @@ void WalletFrame::gotoReceiveCoinsPage()
         i.value()->gotoReceiveCoinsPage();
 }
 
-void WalletFrame::gotoSendCoinsPage(QString addr)
+void WalletFrame::gotoSendCoinsPage(QString addr, bool includeWatchOnly)
 {
     QMap<WalletModel*, WalletView*>::const_iterator i;
     for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
         i.value()->gotoSendCoinsPage(addr);
+
+    if (includeWatchOnly) {
+        WalletView* walletView = currentWalletView();
+        walletView->gotoSendCoinsPage(addr, true);
+    }
 }
 
 void WalletFrame::gotoSignMessageTab(QString addr)
@@ -214,24 +219,18 @@ void WalletFrame::outOfSyncWarningClicked()
     Q_EMIT requestedSyncWarningInfo();
 }
 
-void WalletFrame::gotoOfflineCreate()
-{
-    WalletView* walletView = currentWalletView();
-    if (walletView) {
-        walletView->gotoOfflineCreate();
-    }
-}
-
 void WalletFrame::gotoOfflineSign()
 {
     WalletView* walletView = currentWalletView();
-    if (walletView)
+    if (walletView) {
         walletView->gotoOfflineSign();
+    }
 }
 
 void WalletFrame::gotoOfflineBroadcast()
 {
     WalletView* walletView = currentWalletView();
-    if (walletView)
+    if (walletView) {
         walletView->gotoOfflineBroadcast();
+    }
 }
