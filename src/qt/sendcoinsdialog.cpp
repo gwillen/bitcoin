@@ -407,8 +407,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     } else {
         // Create unsigned transaction, don't send
         OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, model, clientModel);
-        dlg->setFirstTabTransaction(MakeTransactionRef(currentTransaction.getWtx()->get()));
-        dlg->setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
+        dlg->openWithTransaction(MakeTransactionRef(currentTransaction.getWtx()->get()));
         dlg->setAttribute(Qt::WA_DeleteOnClose);
         dlg->exec();
         accept();

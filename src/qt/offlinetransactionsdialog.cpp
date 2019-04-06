@@ -19,26 +19,6 @@
 
 #include <iostream>
 
-/* XXX
-The flow in this dialog is kind of fucked-up. Documenting it here for personal
-reference before I document it more reasonably somewhere else:
-- First you should use the send dialog in unsigned mode.
-- In theory you should already at least have an unsigned offline transaction by
-  the time you're touching this dialog. But if you don't, we should have a button
-  you can push to go back to the send dialog and get one.
-- If you come here from the send dialog, we want to go to tab one and display
-  your transaction. This is expected to be on an online machine but it doesn't
-  really matter -- if you get here, you get here.
-- So the "whoops" pane of the first tab should probably be for use if you come
-  not from the send dialog, and explain how to create an unsigned transaction,
-  and maybe have a button to open the send dialog with the unsigned box checked.
-  - this makes sense because there's no point in having an 'oops' pane of the first
-    tab for offline-ness, actually.
-
-    ...
-- If you come here from
-...
-XXX */
 
 /* XXX
 - first tab:
@@ -62,11 +42,6 @@ XXX */
   - if we're online, show a transaction broadcast box
 */
 
-// can we just have separate 'sign' and 'broadcast' options in the menu?
-//   we can probably do that if the offline stuff box is checked
-//   maybe we add an 'offline' menu with all three steps, the first going to the
-//   send box with offline prechecked
-
 //XXX
 std::string serializeTransaction(PartiallySignedTransaction psbtx)
 {
@@ -75,10 +50,11 @@ std::string serializeTransaction(PartiallySignedTransaction psbtx)
     return ssTx.str();
 }
 
-OfflineTransactionsDialog::OfflineTransactionsDialog(QWidget* parent, WalletModel* walletModel, ClientModel* clientModel) : QDialog(parent),
-                                                                                                                            ui(new Ui::OfflineTransactionsDialog),
-                                                                                                                            walletModel(walletModel),
-                                                                                                                            clientModel(clientModel)
+OfflineTransactionsDialog::OfflineTransactionsDialog(
+    QWidget* parent, WalletModel* walletModel, ClientModel* clientModel) : QDialog(parent),
+                                                                           ui(new Ui::OfflineTransactionsDialog),
+                                                                           walletModel(walletModel),
+                                                                           clientModel(clientModel)
 {
     ui->setupUi(this);
     setWindowTitle("Review offline transaction");
@@ -130,87 +106,52 @@ void OfflineTransactionsDialog::advancedClicked(bool checked)
     ui->pasteButton3->setVisible(checked);
 
     for (int tabId = 1; tabId <= 3; ++tabId) {
-        if (transactionData[tabId].tx) { // XXX should be outer layer optional
+        if (transactionData[tabId] && transactionData[tabId]->tx) {
             transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
         }
     }
 }
 
-void OfflineTransactionsDialog::setFirstTabTransaction(const CTransactionRef tx)
+void OfflineTransactionsDialog::openWithTransaction(const CTransactionRef tx)
 {
     setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
 
     PartiallySignedTransaction psbtx((CMutableTransaction)(*tx));
     bool complete;
-    // XXX hm, this is a gross place to do all this work though.
     TransactionError err = walletModel->FillPSBT(psbtx, complete, SIGHASH_ALL, false, true);
     if (err != TransactionError::OK) {
-        // XXX do something with err
+        // XXX put up a dialog with err
         return;
-    }
-    if (!complete) {
-        // XXX warn it's not complete?
     }
 
     transactionData[1] = psbtx;
     ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
 }
 
-//XXX is this still necessary with prev/next buttons gone
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state)
 {
     ui->tabWidget->setCurrentIndex(state);
 }
 
-enum OfflineTransactionsDialog::WorkflowState OfflineTransactionsDialog::workflowState()
-{
-    return (OfflineTransactionsDialog::WorkflowState)
-        ui->tabWidget->currentIndex();
-}
-
-void OfflineTransactionsDialog::nextState()
-{
-    //XXX
-    switch (workflowState()) {
-    case OfflineTransactionsDialog::GetUnsignedTransaction:
-        setWorkflowState(OfflineTransactionsDialog::SignTransaction);
-        break;
-    case OfflineTransactionsDialog::SignTransaction:
-        setWorkflowState(OfflineTransactionsDialog::BroadcastTransaction);
-        break;
-    default:
-        // Should never happen; nothing to do.
-        break;
-    }
-}
-
-void OfflineTransactionsDialog::prevState()
-{
-    //XXX
-    switch (workflowState()) {
-    case OfflineTransactionsDialog::SignTransaction:
-        setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
-        break;
-    case OfflineTransactionsDialog::BroadcastTransaction:
-        setWorkflowState(OfflineTransactionsDialog::SignTransaction);
-        break;
-    default:
-        // Should never happen; nothing to do.
-        break;
-    }
-}
-
 void OfflineTransactionsDialog::saveToFile(int tabId)
 {
+    if (!transactionData[tabId]) {
+        // There's no loaded transaction to save
+        // XXX show error dialog
+        // XXX or better yet, why don't we grey the button and not get here
+        return;
+    }
+
+    QString selectedFilter;
     QString filename = GUIUtil::getSaveFileName(this,
         tr("Save Transaction Data"), QString(),
-        tr("Partially Signed Transaction (*.psbt)"), nullptr);
+        tr("Partially Signed Transaction (Binary) (*.psbt);;Partially Signed Transaction (Base64) (*.psbt_b64)"), &selectedFilter);
     if (filename.isEmpty()) {
         return;
     }
 
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
-    ssTx << transactionData[tabId];
+    ssTx << *transactionData[tabId];
     std::ofstream out(filename.toLocal8Bit().data());
     out << ssTx.str(); // XXX should we allow writing base64?
     out.close();
@@ -225,8 +166,12 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data)
         return;
     }
 
+    if (!transactionData[tabId]) {
+        transactionData[tabId] = PartiallySignedTransaction();
+    }
+
     if (tabId == 3 && started_tx_assembly) {
-        if (!transactionData[tabId].Merge(psbtx)) {
+        if (!transactionData[tabId]->Merge(psbtx)) {
             // XXX this is bad, it wasn't the same transaction, signal error
         }
     } else {
@@ -236,7 +181,7 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data)
     if (tabId == 3) {
         started_tx_assembly = true;
         ui->loadFromFileButton3->setText("Load more ...");
-        PSBTAnalysis analysis = AnalyzePSBT(transactionData[tabId]);
+        PSBTAnalysis analysis = AnalyzePSBT(*transactionData[tabId]);
         bool have_all_sigs = (analysis.next == PSBTRole::FINALIZER) || (analysis.next == PSBTRole::EXTRACTOR);
         ui->broadcastTransactionButton->setEnabled(have_all_sigs);
     }
@@ -247,14 +192,14 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data)
     }
 
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
-    transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
+    transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(*transactionData[tabId])));
 }
 
 void OfflineTransactionsDialog::loadFromFile(int tabId)
 {
     QString filename = GUIUtil::getOpenFileName(this,
         tr("Load Transaction Data"), QString(),
-        tr("Partially Signed Transaction (*.psbt)"), nullptr);
+        tr("Partially Signed Transaction (*.psbt *.psbt_b64)"), nullptr);
     if (filename.isEmpty()) {
         return;
     }
@@ -268,7 +213,13 @@ void OfflineTransactionsDialog::loadFromFile(int tabId)
 
 void OfflineTransactionsDialog::clipboardCopy(int tabId)
 {
-    QApplication::clipboard()->setText(QString::fromStdString(EncodeBase64(serializeTransaction(transactionData[tabId]))));
+    if (!transactionData[tabId]) {
+        // There's no transaction to copy
+        // XXX show error dialog here... or really the button should also be disabled.
+        return;
+    }
+
+    QApplication::clipboard()->setText(QString::fromStdString(EncodeBase64(serializeTransaction(*transactionData[tabId]))));
 }
 
 void OfflineTransactionsDialog::clipboardPaste(int tabId)
@@ -286,8 +237,14 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId)
 
 void OfflineTransactionsDialog::signTransaction()
 {
+    if (!transactionData[2]) {
+        // No transaction to sign
+        // XXX disable the button and/or show error here
+        return;
+    }
+
     bool complete;
-    TransactionError err = walletModel->FillPSBT(transactionData[2], complete, SIGHASH_ALL, true, true);
+    TransactionError err = walletModel->FillPSBT(*transactionData[2], complete, SIGHASH_ALL, true, true);
     if (err != TransactionError::OK) {
         // XXX this is a failure, do something with err
         return;
@@ -299,7 +256,7 @@ void OfflineTransactionsDialog::signTransaction()
     }
 
     did_sign_tx = true;
-    ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(transactionData[2])));
+    ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(*transactionData[2])));
 
     uiInterface.ThreadSafeMessageBox(
         _("Signed transaction sucessfully."),
@@ -310,9 +267,14 @@ void OfflineTransactionsDialog::signTransaction()
 
 void OfflineTransactionsDialog::broadcastTransaction()
 {
-    // XXX these need to be option<> -- if we try to broadcast with no transaction we crash here. (and probably need more try{} blocks...)
-    PartiallySignedTransaction psbtx = transactionData[3];
-    // XXX hmm, the psbt code that's not wallet-based should NOT go through teh wallet model. But somehow we should be able to call out to it instead of open-code it.
+    if (!transactionData[3]) {
+        // No transaction to broadcast
+        // XXX disable the button and/or show error here
+        return;
+    }
+
+    PartiallySignedTransaction psbtx = *transactionData[3];
+
     bool complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
         // We're not just broadcasting here, we're finalizing, which is slightly misleading?
@@ -340,7 +302,7 @@ void OfflineTransactionsDialog::broadcastTransaction()
     }
 
     resetAssembledTransaction();
-    ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross
+    ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross, pop up a dialog instead
 }
 
 void OfflineTransactionsDialog::resetAssembledTransaction()
@@ -352,9 +314,13 @@ void OfflineTransactionsDialog::resetAssembledTransaction()
     ui->broadcastTransactionButton->setEnabled(false);
 }
 
-std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransaction psbtx)
+std::string OfflineTransactionsDialog::renderTransaction(Optional<PartiallySignedTransaction> psbtx)
 {
-    PSBTAnalysis analysis = AnalyzePSBT(psbtx);
+    if (!psbtx) {
+        return "";
+    }
+
+    PSBTAnalysis analysis = AnalyzePSBT(*psbtx);
 
     // XXX copied from sendcoinsdialog.cpp
     QString questionString = "";
@@ -378,7 +344,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
         questionString.append("Transaction still needs signature(s).\n");
     }
 
-    for (const CTxOut& out : psbtx.tx->vout) {
+    for (const CTxOut& out : psbtx->tx->vout) {
         CTxDestination address;
         ExtractDestination(out.scriptPubKey, address);
         questionString.append(QString("Sends %1 bitcoins to %2\n").arg((double)out.nValue / (double)COIN).arg(QString::fromStdString(EncodeDestination(address))));
@@ -425,7 +391,7 @@ std::string OfflineTransactionsDialog::renderTransaction(PartiallySignedTransact
     */
     if (ui->checkBoxAdvanced->isChecked()) {
         questionString.append("\n\n");
-        questionString.append(QString::fromStdString(EncodeBase64(serializeTransaction(psbtx))));
+        questionString.append(QString::fromStdString(EncodeBase64(serializeTransaction(*psbtx))));
         questionString.append("\n\n");
         questionString.append("Debug info: (XXX disabled) ");
         //XXX questionString.append(analysis.write().c_str());
