@@ -338,12 +338,12 @@ void WalletView::gotoOfflineSign()
 {
     OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, walletModel, clientModel);
     dlg->setWorkflowState(OfflineTransactionsDialog::SignTransaction);
-    dlg->exec();
+    dlg->show();
 }
 
 void WalletView::gotoOfflineBroadcast()
 {
     OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, walletModel, clientModel);
     dlg->setWorkflowState(OfflineTransactionsDialog::BroadcastTransaction);
-    dlg->exec();
+    dlg->show();
 }

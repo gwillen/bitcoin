@@ -54,7 +54,6 @@ public Q_SLOTS:
 private:
     Ui::OfflineTransactionsDialog* ui;
     Optional<PartiallySignedTransaction> transactionData[4]; // 1-indexed by tab to avoid confusion; 0 unused
-    bool did_sign_tx = false;
     bool started_tx_assembly = false;
     QPlainTextEdit*(transactionText[4]); // 1-indexed by tab to avoid confusion; 0 unused
     WalletModel* walletModel;
@@ -62,6 +61,8 @@ private:
 
     std::string renderTransaction(Optional<PartiallySignedTransaction> psbtx);
     void loadTransaction(int tabId, std::string data);
+    void setTransaction(int tabId, const Optional<PartiallySignedTransaction> &psbt);
+    bool showMessageBox(const std::string& message, const std::string& caption, unsigned int style);
 };
 
 #endif // BITCOIN_QT_OFFLINETRANSACTIONSDIALOG_H

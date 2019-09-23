@@ -43,14 +43,14 @@
         <number>0</number>
        </property>
        <item>
-        <widget class="QStackedWidget" name="stackedWidgetStep1">
+        <widget class="QStackedWidget" name="stackedWidgetStep0">
          <property name="currentIndex">
           <number>0</number>
          </property>
          <widget class="QWidget" name="page">
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
-            <widget class="QLabel" name="instructionsLabel1">
+            <widget class="QLabel" name="instructionsLabel0">
              <property name="text">
               <string>On your ONLINE computer: Click 'Save to file...' to save your unsigned transaction to a file and transport it to your offline computer.
 
@@ -82,7 +82,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 <number>0</number>
                </property>
                <item>
-                <widget class="QPlainTextEdit" name="transactionData1">
+                <widget class="QPlainTextEdit" name="transactionData0">
                  <property name="font">
                   <font>
                    <family>Courier</family>
@@ -95,7 +95,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                   <bool>true</bool>
                  </property>
                  <property name="placeholderText">
-                  <string>To create an unsigned transaction, open the Send tab on your online computer, check the 'Create unsigned transaction' box, fill in your transaction details, and click the Create Unsigned button. You can't create an unsigned transaction from here.</string>
+                  <string>No transaction loaded. To create an unsigned transaction, open the Send tab on your online computer, check the 'Create unsigned transaction' box, fill in your transaction details, and click the Create Unsigned button. You can't create an unsigned transaction from here.</string>
                  </property>
                 </widget>
                </item>
@@ -117,7 +117,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 </spacer>
                </item>
                <item>
-                <widget class="QPushButton" name="saveToFileButton1">
+                <widget class="QPushButton" name="saveToFileButton0">
                  <property name="text">
                   <string>Save to file ...</string>
                  </property>
@@ -127,7 +127,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="copyToClipboardButton1">
+                <widget class="QPushButton" name="copyToClipboardButton0">
                  <property name="text">
                   <string>Copy to clipboard</string>
                  </property>
@@ -178,7 +178,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
         <number>0</number>
        </property>
        <item>
-        <widget class="QStackedWidget" name="stackedWidgetStep2">
+        <widget class="QStackedWidget" name="stackedWidgetStep1">
          <property name="currentIndex">
           <number>1</number>
          </property>
@@ -205,11 +205,11 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
             <number>-1</number>
            </property>
            <item>
-            <widget class="QLabel" name="instructionsLabel2">
+            <widget class="QLabel" name="instructionsLabel1">
              <property name="text">
               <string>On your OFFLINE computer: Click 'Load from file...' to load an unsigned transaction from a file; verify it to your satisfaction, then click SIGN TRANSACTION. Click 'Save to file ...' to save it to a new file and bring it back to your online computer.
 
- NEXT, on your ONLINE COMPUTER, select &quot;Offline-&gt;Assemble and broadcast offline transaction...&quot; to broadcast it to the network.</string>
+NEXT, on your ONLINE COMPUTER, select &quot;Offline-&gt;Assemble and broadcast offline transaction...&quot; to broadcast it to the network.</string>
              </property>
              <property name="wordWrap">
               <bool>true</bool>
@@ -237,7 +237,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 <number>0</number>
                </property>
                <item>
-                <widget class="QPlainTextEdit" name="transactionData2">
+                <widget class="QPlainTextEdit" name="transactionData1">
                  <property name="font">
                   <font>
                    <family>Courier</family>
@@ -250,7 +250,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                   <bool>true</bool>
                  </property>
                  <property name="placeholderText">
-                  <string>Click &quot;Load from file ...&quot; and select a PSBT file exported from your online computer, in order to sign it.</string>
+                  <string>No transaction loaded. Click &quot;Load from file ...&quot; and select a PSBT file exported from your online computer, in order to sign it.</string>
                  </property>
                 </widget>
                </item>
@@ -287,14 +287,14 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_11">
                <item>
-                <widget class="QPushButton" name="loadFromFileButton2">
+                <widget class="QPushButton" name="loadFromFileButton1">
                  <property name="text">
                   <string>Load from file ...</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="pasteButton2">
+                <widget class="QPushButton" name="pasteButton1">
                  <property name="text">
                   <string>Paste</string>
                  </property>
@@ -314,14 +314,14 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 </spacer>
                </item>
                <item>
-                <widget class="QPushButton" name="saveToFileButton2">
+                <widget class="QPushButton" name="saveToFileButton1">
                  <property name="text">
                   <string>Save to file ...</string>
                  </property>
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="copyToClipboardButton2">
+                <widget class="QPushButton" name="copyToClipboardButton1">
                  <property name="text">
                   <string>Copy to clipboard</string>
                  </property>
@@ -355,7 +355,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
         <number>0</number>
        </property>
        <item>
-        <widget class="QStackedWidget" name="stackedWidgetStep3">
+        <widget class="QStackedWidget" name="stackedWidgetStep2">
          <property name="currentIndex">
           <number>0</number>
          </property>
@@ -365,7 +365,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
             <number>-1</number>
            </property>
            <item>
-            <widget class="QLabel" name="instructionsLabel3">
+            <widget class="QLabel" name="instructionsLabel2">
              <property name="text">
               <string>On your ONLINE computer: Click 'Load from file...' to load a transaction, which you signed on your offline machine(s). If necessary, load multiple files in sequence until you have loaded all parts of the transaction. Then click BROADCAST.</string>
              </property>
@@ -402,7 +402,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 <number>0</number>
                </property>
                <item>
-                <widget class="QPlainTextEdit" name="transactionData3">
+                <widget class="QPlainTextEdit" name="transactionData2">
                  <property name="font">
                   <font>
                    <family>Courier</family>
@@ -415,7 +415,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                   <bool>true</bool>
                  </property>
                  <property name="placeholderText">
-                  <string>Click &quot;Load from file ...&quot; and select a signed PSBT file for broadcast. If you have multiple signatures that need to be combined, you can load each file in turn.</string>
+                  <string>No transaction loaded. Click &quot;Load from file ...&quot; and select a signed PSBT file for broadcast. If you have multiple signatures that need to be combined, you can load each file in turn.</string>
                  </property>
                 </widget>
                </item>
@@ -441,7 +441,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
              <item>
               <layout class="QVBoxLayout" name="verticalLayout_15">
                <item>
-                <widget class="QPushButton" name="loadFromFileButton3">
+                <widget class="QPushButton" name="loadFromFileButton2">
                  <property name="minimumSize">
                   <size>
                    <width>151</width>
@@ -454,7 +454,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 </widget>
                </item>
                <item>
-                <widget class="QPushButton" name="pasteButton3">
+                <widget class="QPushButton" name="pasteButton2">
                  <property name="text">
                   <string>Paste</string>
                  </property>
@@ -474,7 +474,7 @@ NEXT, on your OFFLINE computer, select &quot;Offline-&gt;Sign offline transactio
                 </spacer>
                </item>
                <item>
-                <widget class="QPushButton" name="resetButton3">
+                <widget class="QPushButton" name="resetButton2">
                  <property name="text">
                   <string>Reset</string>
                  </property>

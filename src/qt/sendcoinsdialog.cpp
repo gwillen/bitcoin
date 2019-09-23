@@ -409,7 +409,7 @@ void SendCoinsDialog::on_sendButton_clicked()
         OfflineTransactionsDialog* dlg = new OfflineTransactionsDialog(this, model, clientModel);
         dlg->openWithTransaction(MakeTransactionRef(currentTransaction.getWtx()->get()));
         dlg->setAttribute(Qt::WA_DeleteOnClose);
-        dlg->exec();
+        dlg->show();
         accept();
     }
 }

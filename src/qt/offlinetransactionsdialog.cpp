@@ -42,6 +42,20 @@
   - if we're online, show a transaction broadcast box
 */
 
+// XXX
+size_t CountPSBTUnsignedInputs(const PartiallySignedTransaction &psbt) {
+    PSBTAnalysis psbta = AnalyzePSBT(psbt);
+
+    size_t count = 0;
+    for (const auto& input : psbta.inputs) {
+        if (!input.is_final) {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 //XXX
 std::string serializeTransaction(PartiallySignedTransaction psbtx)
 {
@@ -59,38 +73,46 @@ OfflineTransactionsDialog::OfflineTransactionsDialog(
     ui->setupUi(this);
     setWindowTitle("Review offline transaction");
 
-    ui->stackedWidgetStep2->setCurrentIndex(1); //XXX // only sign if we're offline
-    ui->stackedWidgetStep3->setCurrentIndex(0); //XXX only broadcast if we're online
+    ui->stackedWidgetStep1->setCurrentIndex(1); //XXX // only sign if we're offline
+    ui->stackedWidgetStep2->setCurrentIndex(0); //XXX only broadcast if we're online
 
+    transactionText[0] = ui->transactionData0;
     transactionText[1] = ui->transactionData1;
     transactionText[2] = ui->transactionData2;
-    transactionText[3] = ui->transactionData3;
 
-    for (int i = 1; i <= 3; ++i) {
+    for (int i = 0; i < 3; ++i) {
         transactionText[i]->setWordWrapMode(QTextOption::WrapAnywhere);
     }
 
+    connect(ui->saveToFileButton0, &QPushButton::clicked, [this]() { saveToFile(0); });
     connect(ui->saveToFileButton1, &QPushButton::clicked, [this]() { saveToFile(1); });
-    connect(ui->saveToFileButton2, &QPushButton::clicked, [this]() { saveToFile(2); });
 
+    connect(ui->copyToClipboardButton0, &QPushButton::clicked, [this]() { clipboardCopy(0); });
     connect(ui->copyToClipboardButton1, &QPushButton::clicked, [this]() { clipboardCopy(1); });
-    connect(ui->copyToClipboardButton2, &QPushButton::clicked, [this]() { clipboardCopy(2); });
 
+    connect(ui->loadFromFileButton1, &QPushButton::clicked, [this]() { loadFromFile(1); });
     connect(ui->loadFromFileButton2, &QPushButton::clicked, [this]() { loadFromFile(2); });
-    connect(ui->loadFromFileButton3, &QPushButton::clicked, [this]() { loadFromFile(3); });
 
+    connect(ui->pasteButton1, &QPushButton::clicked, [this]() { clipboardPaste(1); });
     connect(ui->pasteButton2, &QPushButton::clicked, [this]() { clipboardPaste(2); });
-    connect(ui->pasteButton3, &QPushButton::clicked, [this]() { clipboardPaste(3); });
 
     connect(ui->signTransactionButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::signTransaction);
     connect(ui->broadcastTransactionButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::broadcastTransaction);
 
-    connect(ui->resetButton3, &QPushButton::clicked, this, &OfflineTransactionsDialog::resetAssembledTransaction);
+    connect(ui->resetButton2, &QPushButton::clicked, this, &OfflineTransactionsDialog::resetAssembledTransaction);
     connect(ui->closeButton, &QPushButton::clicked, this, &OfflineTransactionsDialog::close);
     connect(ui->checkBoxAdvanced, &QCheckBox::clicked, this, &OfflineTransactionsDialog::advancedClicked);
 
     // Initialize advanced buttons to be hidden
     advancedClicked(false);
+
+    // Buttons that require a valid transaction start out disabled (and are re-enabled in setTransaction).
+    ui->saveToFileButton0->setEnabled(false);
+    ui->saveToFileButton1->setEnabled(false);
+    ui->copyToClipboardButton0->setEnabled(false);
+    ui->copyToClipboardButton1->setEnabled(false);
+    ui->signTransactionButton->setEnabled(false);
+    ui->broadcastTransactionButton->setEnabled(false);
 }
 
 OfflineTransactionsDialog::~OfflineTransactionsDialog()
@@ -100,12 +122,12 @@ OfflineTransactionsDialog::~OfflineTransactionsDialog()
 
 void OfflineTransactionsDialog::advancedClicked(bool checked)
 {
+    ui->copyToClipboardButton0->setVisible(checked);
     ui->copyToClipboardButton1->setVisible(checked);
-    ui->copyToClipboardButton2->setVisible(checked);
+    ui->pasteButton1->setVisible(checked);
     ui->pasteButton2->setVisible(checked);
-    ui->pasteButton3->setVisible(checked);
 
-    for (int tabId = 1; tabId <= 3; ++tabId) {
+    for (int tabId = 0; tabId < 3; ++tabId) {
         if (transactionData[tabId] && transactionData[tabId]->tx) {
             transactionText[tabId]->setPlainText(QString::fromStdString(renderTransaction(transactionData[tabId])));
         }
@@ -114,7 +136,7 @@ void OfflineTransactionsDialog::advancedClicked(bool checked)
 
 void OfflineTransactionsDialog::openWithTransaction(const CTransactionRef tx)
 {
-    setWorkflowState(OfflineTransactionsDialog::GetUnsignedTransaction);
+    setWorkflowState(WorkflowState::GetUnsignedTransaction);
 
     PartiallySignedTransaction psbtx((CMutableTransaction)(*tx));
     bool complete;
@@ -124,8 +146,36 @@ void OfflineTransactionsDialog::openWithTransaction(const CTransactionRef tx)
         return;
     }
 
-    transactionData[1] = psbtx;
-    ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(transactionData[1])));
+    setTransaction(WorkflowState::GetUnsignedTransaction, psbtx);
+    ui->transactionData0->setPlainText(QString::fromStdString(renderTransaction(transactionData[WorkflowState::GetUnsignedTransaction])));
+}
+
+void OfflineTransactionsDialog::setTransaction(int tabId, const Optional<PartiallySignedTransaction> &psbt)
+{
+    // XXX hmmmmm, but why enable the save button if we e.g. just loaded somethinb but didn't successfully sign it?
+    // XXX also, the fact that you can't save in the broadcast dialog means you can't save combined which is weird?
+    bool haveTransaction = !!psbt;
+    fprintf(stderr, "XXX have transaction? %d\n", haveTransaction);
+
+    switch (tabId) {
+    case WorkflowState::GetUnsignedTransaction:
+        fprintf(stderr, "XXX 0\n");
+        ui->saveToFileButton0->setEnabled(haveTransaction);
+        ui->copyToClipboardButton0->setEnabled(haveTransaction);
+        break;
+    case WorkflowState::SignTransaction:
+        fprintf(stderr, "XXX 1\n");
+        ui->saveToFileButton1->setEnabled(haveTransaction);
+        ui->copyToClipboardButton1->setEnabled(haveTransaction);
+        ui->signTransactionButton->setEnabled(haveTransaction);
+        break;
+    case WorkflowState::BroadcastTransaction:
+        fprintf(stderr, "XXX 2\n");
+        ui->broadcastTransactionButton->setEnabled(haveTransaction);
+        break;
+    }
+
+    transactionData[tabId] = psbt;
 }
 
 void OfflineTransactionsDialog::setWorkflowState(enum OfflineTransactionsDialog::WorkflowState state)
@@ -167,28 +217,23 @@ void OfflineTransactionsDialog::loadTransaction(int tabId, std::string data)
     }
 
     if (!transactionData[tabId]) {
-        transactionData[tabId] = PartiallySignedTransaction();
+        setTransaction(tabId, PartiallySignedTransaction());
     }
 
-    if (tabId == 3 && started_tx_assembly) {
+    if (tabId == WorkflowState::BroadcastTransaction && started_tx_assembly) {
         if (!transactionData[tabId]->Merge(psbtx)) {
             // XXX this is bad, it wasn't the same transaction, signal error
         }
     } else {
-        transactionData[tabId] = psbtx;
+        setTransaction(tabId, psbtx);
     }
 
-    if (tabId == 3) {
+    if (tabId == WorkflowState::BroadcastTransaction) {
         started_tx_assembly = true;
-        ui->loadFromFileButton3->setText("Load more ...");
+        ui->loadFromFileButton2->setText("Load more ...");
         PSBTAnalysis analysis = AnalyzePSBT(*transactionData[tabId]);
         bool have_all_sigs = (analysis.next == PSBTRole::FINALIZER) || (analysis.next == PSBTRole::EXTRACTOR);
         ui->broadcastTransactionButton->setEnabled(have_all_sigs);
-    }
-
-    if (tabId == 2) {
-        // XXX, this also needs to happen if we clear the tab some other way?
-        did_sign_tx = false;
     }
 
     // XXX re-encoding here could be slightly rude and mask issues if it's not bijective... is it?
@@ -237,43 +282,52 @@ void OfflineTransactionsDialog::clipboardPaste(int tabId)
 
 void OfflineTransactionsDialog::signTransaction()
 {
-    if (!transactionData[2]) {
-        // No transaction to sign
-        // XXX disable the button and/or show error here
+    if (!transactionData[WorkflowState::SignTransaction]) {
+        // No transaction to sign; can't get here because the button is disabled.
+        return;
+    }
+
+    PartiallySignedTransaction& psbtx = *transactionData[WorkflowState::SignTransaction];
+    size_t unsigned_count = CountPSBTUnsignedInputs(psbtx);
+
+    // XXX probably should disable the sign button here maybe?
+    if (unsigned_count == 0) {
+        showMessageBox(_("Transaction is already fully signed."), "", CClientUIInterface::MSG_INFORMATION | CClientUIInterface::MODAL);
         return;
     }
 
     bool complete;
-    TransactionError err = walletModel->FillPSBT(*transactionData[2], complete, SIGHASH_ALL, true, true);
+    TransactionError err = walletModel->FillPSBT(psbtx, complete, SIGHASH_ALL, true, true);
+    size_t did_sign_count = unsigned_count - CountPSBTUnsignedInputs(psbtx);
+
     if (err != TransactionError::OK) {
+        showMessageBox(_("Failed to sign transaction: TK say why. XXX"), "", CClientUIInterface::MSG_ERROR);
         // XXX this is a failure, do something with err
         return;
     }
 
-    if (!complete) {
+    // XXX this needs a better state machine / matrix.
+    if (did_sign_count < 1 && !complete) {
+        showMessageBox(_("Transaction is not fully signed, but there are no more inputs we can sign."), "", CClientUIInterface::MSG_ERROR);
+    } else if (!complete) {
+        showMessageBox(_("Signed transaction successfully, but more signatures are still required."), "", CClientUIInterface::MSG_WARNING);
         //XXX oops, it worked but warn that it's still incomplete and can't be broadcast yet
         // maybe colorize or something?
+    } else {
+        showMessageBox(_("Signed transaction sucessfully. Transaction is now fully signed and ready to broadcast."),  "", CClientUIInterface::MSG_INFORMATION | CClientUIInterface::MODAL);
     }
 
-    did_sign_tx = true;
-    ui->transactionData2->setPlainText(QString::fromStdString(renderTransaction(*transactionData[2])));
-
-    uiInterface.ThreadSafeMessageBox(
-        _("Signed transaction sucessfully."),
-        "", CClientUIInterface::MSG_ERROR);
-
-    // XXX TK put up a 'signed' modal here
+    ui->transactionData1->setPlainText(QString::fromStdString(renderTransaction(psbtx)));
 }
 
 void OfflineTransactionsDialog::broadcastTransaction()
 {
-    if (!transactionData[3]) {
-        // No transaction to broadcast
-        // XXX disable the button and/or show error here
+    if (!transactionData[WorkflowState::BroadcastTransaction]) {
+        // No transaction to broadcast; can't get here because the button is disabled.
         return;
     }
 
-    PartiallySignedTransaction psbtx = *transactionData[3];
+    PartiallySignedTransaction& psbtx = *transactionData[WorkflowState::BroadcastTransaction];
 
     bool complete = true;
     for (unsigned int i = 0; i < psbtx.tx->vin.size(); ++i) {
@@ -281,8 +335,9 @@ void OfflineTransactionsDialog::broadcastTransaction()
         complete &= SignPSBTInput(DUMMY_SIGNING_PROVIDER, psbtx, i, SIGHASH_ALL);
     }
     if (!complete) {
+        showMessageBox(_("Unable to broadcast, as transaction signing is not complete."), "", CClientUIInterface::MSG_WARNING);
         // XXX miserable failure, signal error
-        // XXX we mutated our transaction here, should probably have updated the display...
+        // XXX we mutated our transaction here, should probably have updated the display... XXX!!!!
         return;
     }
     CMutableTransaction mtx(*psbtx.tx);
@@ -297,20 +352,26 @@ void OfflineTransactionsDialog::broadcastTransaction()
     TransactionError error = clientModel->node().broadcastTransaction(tx, txid, err_string);
     if (error == TransactionError::OK) {
         message = "Transaction broadcast successfully! Transaction ID: " + txid.GetHex();
+        showMessageBox(_("Broadcast transaction sucessfully.") + "\n" + _("Transaction ID: ") + txid.GetHex(), "", CClientUIInterface::MSG_INFORMATION | CClientUIInterface::MODAL);
     } else {
-        message = "Transaction broadcast failed: " + err_string;
+        // XXX: these are not the most user-friendly messages. They are teh ones from sendrawtransaction.
+        message = "Transaction broadcast failed: " + TransactionErrorString(error);
+        if (err_string != "") {
+            message += " (" + err_string + ")";
+        }
+        showMessageBox(_("Failed to broadcast transaction:") + "\n" + err_string, "", CClientUIInterface::MSG_ERROR);
     }
 
     resetAssembledTransaction();
-    ui->transactionData3->setPlainText(QString::fromStdString(message)); // XXX this is gross, pop up a dialog instead
+    ui->transactionData2->setPlainText(QString::fromStdString(message)); // XXX this is gross, pop up a dialog instead
 }
 
 void OfflineTransactionsDialog::resetAssembledTransaction()
 {
     started_tx_assembly = false;
-    transactionData[3] = PartiallySignedTransaction();
-    transactionText[3]->setPlainText("");
-    ui->loadFromFileButton3->setText("Load from file ...");
+    setTransaction(WorkflowState::BroadcastTransaction, nullopt);
+    transactionText[WorkflowState::BroadcastTransaction]->setPlainText("");
+    ui->loadFromFileButton2->setText("Load from file ...");
     ui->broadcastTransactionButton->setEnabled(false);
 }
 
@@ -324,13 +385,6 @@ std::string OfflineTransactionsDialog::renderTransaction(Optional<PartiallySigne
 
     // XXX copied from sendcoinsdialog.cpp
     QString questionString = "";
-
-    if (did_sign_tx) {
-        // XXX except, we didn't check whether our signing actually did anything, or whether there was even anything we could sign.
-        questionString.append("SIGNED!\n\n");
-        // XXX also, this is bad because it puts SIGNED in the broadcast box when we paste a transaction after signing -- in general 'signed' is not a state that sticks around, or is cross-tab -- we should have this as something like a butterbar on tab 2, instead.
-    }
-
     questionString.append("Transaction preview:\n"); // XXX removed tr() macro
 
     CAmount txFee = 0;
@@ -389,6 +443,14 @@ std::string OfflineTransactionsDialog::renderTransaction(Optional<PartiallySigne
         questionString.arg(formatted.join("<br />")), SEND_CONFIRM_DELAY, this);
     }
     */
+    size_t num_unsigned = CountPSBTUnsignedInputs(*psbtx);
+
+    if (num_unsigned > 0) {
+        questionString.append("\n\nTransaction has ");
+        questionString.append(QString::number(num_unsigned));
+        questionString.append(" unsigned inputs.");
+    }
+
     if (ui->checkBoxAdvanced->isChecked()) {
         questionString.append("\n\n");
         questionString.append(QString::fromStdString(EncodeBase64(serializeTransaction(*psbtx))));
@@ -399,7 +461,17 @@ std::string OfflineTransactionsDialog::renderTransaction(Optional<PartiallySigne
     return questionString.toStdString();
 }
 
+bool OfflineTransactionsDialog::showMessageBox(const std::string& message, const std::string& caption, unsigned int style) {
+    bool rv = uiInterface.ThreadSafeMessageBox(message, caption, style);
+    // Workaround: Displaying a ThreadSafeMessageBox brings the main window to the front.
+    this->raise();
+    this->activateWindow();
+    return rv;
+}
+
 //XXX
+
+/*
 
 bool GetUTXO(PSBTInput& pi, CTxOut& utxo, int prevout_index)
 {
@@ -412,3 +484,5 @@ bool GetUTXO(PSBTInput& pi, CTxOut& utxo, int prevout_index)
     }
     return true;
 }
+
+*/
